@@ -1,0 +1,3 @@
+CREATE SCHEMA [bpssvc]
+AUTHORIZATION [bpssvc]
+GO

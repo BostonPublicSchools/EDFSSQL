@@ -1,0 +1,8 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+CREATE procedure [dbo].[getAllEmpl]
+AS
+SELECT * FROM Empl
+GO
