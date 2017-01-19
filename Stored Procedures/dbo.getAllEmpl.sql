@@ -2,7 +2,27 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE procedure [dbo].[getAllEmpl]
+CREATE PROCEDURE [dbo].[getAllEmpl]
 AS
-SELECT * FROM Empl
+    SELECT  EmplID ,
+            NameLast ,
+            NameFirst ,
+            NameMiddle ,
+            EmplActive ,
+            CreatedByID ,
+            CreatedByDt ,
+            LastUpdatedByID ,
+            LastUpdatedDt ,
+            IsAdmin ,
+            Sex ,
+            BirthDt ,
+            Race ,
+            IsContractor ,
+            PrimaryEvalID ,
+            HasReadOnlyAccess ,
+            ExpectedReturnDate ,
+            OriginalHireDate ,
+            EmplActiveDt ,
+            EmplPWord
+    FROM    dbo.Empl;
 GO

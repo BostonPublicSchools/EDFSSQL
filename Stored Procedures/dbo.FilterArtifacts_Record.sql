@@ -64,7 +64,10 @@ Set @Sqlcte=
 		 )		-- select distinct * from Evidence_cte order by evidenceid; '
 		 
 Set @SqlResult=@Sqlcte + N'	
-   SELECT * FROM (
+   SELECT MainResult.StandardTags ,
+    MainResult.IndicatorTags ,
+	MainResult.GoalTags
+   FROM (
 	   select distinct ev_outside.EvidenceID,ev_outside.PlanID, ev_outside.Employee, ev_outside.emplID
 			,ev_outside.FileName,ev_outside.FileExt,ev_outside.CreatedByDt,ev_outside.CreatedBy,ev_outside.CreatedByID
 			, ev_outside.EmplJobID

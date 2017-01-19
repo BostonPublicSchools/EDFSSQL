@@ -10,56 +10,127 @@ GO
 --				active emplJobs.
 -- =============================================
 CREATE PROCEDURE [dbo].[CopySubEvalNewMgr]
-@DeptID as int,
-@OldManagerId as nchar(6),
-@ManagerId as nchar(6),
-@UserID as nchar(6)
-
+    @DeptID AS INT ,
+    @OldManagerId AS NCHAR(6) ,
+    @ManagerId AS NCHAR(6) ,
+    @UserID AS NCHAR(6)
 AS
-BEGIN
+    BEGIN
 
-SET NOCOUNT ON;
+        SET NOCOUNT ON;
 
-DECLARE @ResultSet table(rsEmplID nchar(6), rsEvalActive bit, rsIsLicEval bit, rsIsNonLicEval bit,rsIsEvalManager bit)
+        DECLARE @ResultSet TABLE
+            (
+              rsEmplID NCHAR(6) ,
+              rsEvalActive BIT ,
+              rsIsLicEval BIT ,
+              rsIsNonLicEval BIT ,
+              rsIsEvalManager BIT
+            );
 
-Insert into @ResultSet(rsEmplID, rsEvalActive,rsIsLicEval, rsIsNonLicEval,rsIsEvalManager)
-	SELECT EmplID, EvalActive, Is5StepProcess, IsNon5StepProcess, IsEvalManager FROM SubEval
-		WHERE MgrID = @OldManagerId and EvalActive=1 and EmplID != @ManagerId
+        INSERT  INTO @ResultSet
+                ( rsEmplID ,
+                  rsEvalActive ,
+                  rsIsLicEval ,
+                  rsIsNonLicEval ,
+                  rsIsEvalManager
+                )
+                SELECT  EmplID ,
+                        EvalActive ,
+                        Is5StepProcess ,
+                        IsNon5StepProcess ,
+                        IsEvalManager
+                FROM    dbo.SubEval
+                WHERE   MgrID = @OldManagerId
+                        AND EvalActive = 1
+                        AND EmplID != @ManagerId;
 
 ---Iterate through the evaluators
-	declare @counter int
-	declare @productKey varchar(20)
+        DECLARE @counter INT;
+        DECLARE @productKey VARCHAR(20);
 
-	SET @counter = (select COUNT(*) from @ResultSet)
+        SET @counter = ( SELECT COUNT(*)
+                         FROM   @ResultSet
+                       );
 
-	WHILE (1=1 and @counter > 0) 
-	BEGIN	
+        WHILE ( 1 = 1
+                AND @counter > 0
+              )
+            BEGIN	
 	
-	DECLARE @newEvalID as int
-	DECLARE @EmplID as nchar(6)
+                DECLARE @newEvalID AS INT;
+                DECLARE @EmplID AS NCHAR(6);
 	
-	SET @EmplID = (SELECT top 1 rsEmplID FROM @ResultSet)
+                SET @EmplID = ( SELECT TOP 1
+                                        rsEmplID
+                                FROM    @ResultSet
+                              );
 	
-	IF NOT EXISTS(SELECT * FROM SubEval WHERE MgrID = @ManagerId and EmplID = @EmplID and EvalActive = 1)
-	BEGIN	
-	INSERT into SubEval(MgrID, EmplID, CreatedByDt, CreatedByID, EvalActive, IsEvalManager, Is5StepProcess, IsNon5StepProcess, LastUpdatedByID, LastUpdatedDt)
-		SELECT top 1  @ManagerId, rsEmplID, GETDATE(), @UserID, rsEvalActive, rsIsEvalManager, rsIsLicEval, rsIsNonLicEval, @UserID, GETDATE()
-	FROM @ResultSet 
+                IF NOT EXISTS ( SELECT  EvalID ,
+                                        MgrID ,
+                                        EmplID ,
+                                        EvalActive ,
+                                        CreatedByID ,
+                                        CreatedByDt ,
+                                        LastUpdatedByID ,
+                                        LastUpdatedDt ,
+                                        Is5StepProcess ,
+                                        IsNon5StepProcess ,
+                                        IsEvalManager
+                                FROM    dbo.SubEval
+                                WHERE   MgrID = @ManagerId
+                                        AND EmplID = @EmplID
+                                        AND EvalActive = 1 )
+                    BEGIN	
+                        INSERT  INTO dbo.SubEval
+                                ( MgrID ,
+                                  EmplID ,
+                                  CreatedByDt ,
+                                  CreatedByID ,
+                                  EvalActive ,
+                                  IsEvalManager ,
+                                  Is5StepProcess ,
+                                  IsNon5StepProcess ,
+                                  LastUpdatedByID ,
+                                  LastUpdatedDt
+                                )
+                                SELECT TOP 1
+                                        @ManagerId ,
+                                        rsEmplID ,
+                                        GETDATE() ,
+                                        @UserID ,
+                                        rsEvalActive ,
+                                        rsIsEvalManager ,
+                                        rsIsLicEval ,
+                                        rsIsNonLicEval ,
+                                        @UserID ,
+                                        GETDATE()
+                                FROM    @ResultSet; 
 	
-	SET @newEvalID = SCOPE_IDENTITY();
+                        SET @newEvalID = SCOPE_IDENTITY();
 	
 	---update the subeval of all the emplJobs of the dept with new manager relations.
-	UPDATE sej
-	SET sej.SubEvalID = @newEvalID
-	FROM SubevalAssignedEmplEmplJob sej WHERE sej.EmplJobID in (SELECT EmplJobID FROM EmplEmplJob WHERE DeptID = @DeptID and IsActive = 1)
-												and sej.SubEvalID in (SELECT EvalID FROM SubEval WHERE EvalActive = 1 and MgrID = @OldManagerID and EmplID = @EmplID)
-												and sej.IsActive = 1
-	END		
-	DELETE top (1) from @ResultSet 
-	SET @counter-=1;
+                        UPDATE  sej
+                        SET     sej.SubEvalID = @newEvalID
+                        FROM    dbo.SubevalAssignedEmplEmplJob sej
+                        WHERE   sej.EmplJobID IN ( SELECT   EmplJobID
+                                                   FROM     dbo.EmplEmplJob
+                                                   WHERE    DeptID = @DeptID
+                                                            AND IsActive = 1 )
+                                AND sej.SubEvalID IN (
+                                SELECT  EvalID
+                                FROM    dbo.SubEval
+                                WHERE   EvalActive = 1
+                                        AND MgrID = @OldManagerId
+                                        AND EmplID = @EmplID )
+                                AND sej.IsActive = 1;
+                    END;		
+                DELETE TOP ( 1 )
+                FROM    @ResultSet; 
+                SET @counter -= 1;
 	
-	IF (@counter=0) 
-	BREAK;
-	END
-END
+                IF ( @counter = 0 )
+                    BREAK;
+            END;
+    END;
 GO

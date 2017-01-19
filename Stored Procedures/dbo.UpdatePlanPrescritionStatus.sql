@@ -8,35 +8,37 @@ GO
 -- Description:	Update the plan prescription status
 -- if there are no prescription
 -- =============================================
-Create PROCEDURE [dbo].[UpdatePlanPrescritionStatus]
-	 @EvalID as int
-	,@PlanID as int
-	,@UserID as varchar(6) 
-	
+CREATE PROCEDURE [dbo].[UpdatePlanPrescritionStatus]
+    @EvalID AS INT ,
+    @PlanID AS INT ,
+    @UserID AS VARCHAR(6)
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 	
-	DECLARE @PrescriptStatus as bit
+        DECLARE @PrescriptStatus AS BIT;
 	
-	IF NOT Exists(SELECT * FROM EvaluationStandardRating 
-					WHERE RatingID IN (SELECT CodeID FROM CodeLookUp 
-										WHERE CodeType = 'StdRating' 
-										AND CodeText IN('Needs Improvement','Unsatisfactory') 
-									  )
-					AND EvalID = @EvalID)
-	BEGIN
-		SET @PrescriptStatus = 0
-	END				     		
-	ELSE
-	BEGIN
-		SET @PrescriptStatus = 1
-	END
+        IF NOT EXISTS ( SELECT  EvalStdRatingID
+                        FROM    dbo.EvaluationStandardRating
+                        WHERE   RatingID IN (
+                                SELECT  CodeID
+                                FROM    dbo.CodeLookUp
+                                WHERE   CodeType = 'StdRating'
+                                        AND CodeText IN ( 'Needs Improvement',
+                                                          'Unsatisfactory' ) )
+                                AND EvalID = @EvalID )
+            BEGIN
+                SET @PrescriptStatus = 0;
+            END;				     		
+        ELSE
+            BEGIN
+                SET @PrescriptStatus = 1;
+            END;
 	
-		UPDATE EmplPlan
-		SET HasPrescript = @PrescriptStatus,
-		LastUpdatedByID = @UserID,
-		LastUpdatedDt = GETDATE()
-		WHERE PlanID = @PlanID 
-END
+        UPDATE  dbo.EmplPlan
+        SET     HasPrescript = @PrescriptStatus ,
+                LastUpdatedByID = @UserID ,
+                LastUpdatedDt = GETDATE()
+        WHERE   PlanID = @PlanID; 
+    END;
 GO

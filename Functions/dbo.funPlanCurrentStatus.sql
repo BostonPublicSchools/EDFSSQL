@@ -8,47 +8,94 @@ GO
 -- Description: 
 -- =============================================
 
-CREATE Function [dbo].[funPlanCurrentStatus](@PlanID Integer, @EvalID Integer)
-Returns nvarchar(100)
+CREATE FUNCTION [dbo].[funPlanCurrentStatus]
+    (
+      @PlanID INTEGER ,
+      @EvalID INTEGER
+    )
+RETURNS NVARCHAR(100)
 AS
-BEGIN
-	DECLARE @Final nvarchar(100)
-	SET @Final = 'Plan'
-	IF(@EvalID IS NOT NULL)
-	Begin
-		SET @Final = (select cd.CodeText from EmplPlan ep												 
-						JOIN Evaluation ev on ev.EvalID = @EvalID
-						LEFT JOIN CodeLookUp cd on cd.CodeID = ev.EvalTypeID                    
-						where ep.PlanActive = 1 and ep.PlanID = @PlanID)
-	END
-	ELSE IF(Exists(Select * from PlanGoal where PlanID = @PlanID))
-	BEGIN 
-		DECLARE @GoalStatus nvarchar(100)
-		SET @GoalStatus = (Select CodeText from CodeLookUp where CodeID = (Select GoalStatusID from EmplPlan where PlanID = @PlanID))
-		IF(Exists(Select * from GoalActionStep where GoalID in (Select GoalID from PlanGoal where PlanID = @PlanID) AND @GoalStatus = 'Approved'))
-			BEGIN
-			 DECLARE @AcnStepStatus nvarchar(100)
-			 SET @AcnStepStatus = (Select CodeText from CodeLookUp where CodeID = (Select ActnStepStatusID from EmplPlan where PlanID = @PlanID))
-			 SET @Final =  (CASE WHEN @AcnStepStatus IS NULL THEN 'Action Steps' ELSE 'Action Steps ' + @AcnStepStatus END)
-			END
-		ELSE
-			BEGIN
-			 SET @Final =  (CASE WHEN @GoalStatus IS NULL THEN 'Goals' ELSE 'Goals ' + @AcnStepStatus END)
-			END		
-	END
-	ELSE IF(Exists(Select * from PlanSelfAsmt where PlanID = @PlanID))
-	BEGIN
-		SET @Final = 'Self-Assessment'
-	END
-	ELSE IF(Exists(Select * from EmplPlanEvidence where PlanID = @PlanID))
-	BEGIN
-		SET @Final = 'Collect Evidence'
-	END
-	ELSE
-	BEGIN 
-	 set @Final = '#N/A'
-	END
+    BEGIN
+        DECLARE @Final NVARCHAR(100);
+        SET @Final = 'Plan';
+        IF ( @EvalID IS NOT NULL )
+            BEGIN
+                SET @Final = ( SELECT   cd.CodeText
+                               FROM     dbo.EmplPlan ep
+                                        JOIN dbo.Evaluation ev ON ev.EvalID = @EvalID
+                                        LEFT JOIN dbo.CodeLookUp cd ON cd.CodeID = ev.EvalTypeID
+                               WHERE    ep.PlanActive = 1
+                                        AND ep.PlanID = @PlanID
+                             );
+            END;
+        ELSE
+            IF ( EXISTS ( SELECT    GoalID 
+                          FROM      dbo.PlanGoal
+                          WHERE     PlanID = @PlanID ) )
+                BEGIN 
+                    DECLARE @GoalStatus NVARCHAR(100);
+                    SET @GoalStatus = ( SELECT  CodeText
+                                        FROM    dbo.CodeLookUp
+                                        WHERE   CodeID = ( SELECT
+                                                              GoalStatusID
+                                                           FROM
+                                                              dbo.EmplPlan
+                                                           WHERE
+                                                              PlanID = @PlanID
+                                                         )
+                                      );
+                    IF ( EXISTS ( SELECT    ActionStepID
+                                  FROM      dbo.GoalActionStep
+                                  WHERE     GoalID IN ( SELECT
+                                                              GoalID
+                                                        FROM  dbo.PlanGoal
+                                                        WHERE PlanID = @PlanID )
+                                            AND @GoalStatus = 'Approved' ) )
+                        BEGIN
+                            DECLARE @AcnStepStatus NVARCHAR(100);
+                            SET @AcnStepStatus = ( SELECT   CodeText
+                                                   FROM     dbo.CodeLookUp
+                                                   WHERE    CodeID = ( SELECT
+                                                              ActnStepStatusID
+                                                              FROM
+                                                              dbo.EmplPlan
+                                                              WHERE
+                                                              PlanID = @PlanID
+                                                              )
+                                                 );
+                            SET @Final = ( CASE WHEN @AcnStepStatus IS NULL
+                                                THEN 'Action Steps'
+                                                ELSE 'Action Steps '
+                                                     + @AcnStepStatus
+                                           END );
+                        END;
+                    ELSE
+                        BEGIN
+                            SET @Final = ( CASE WHEN @GoalStatus IS NULL
+                                                THEN 'Goals'
+                                                ELSE 'Goals ' + @AcnStepStatus
+                                           END );
+                        END;		
+                END;
+            ELSE
+                IF ( EXISTS ( SELECT    SelfAsmtID 
+                              FROM      dbo.PlanSelfAsmt
+                              WHERE     PlanID = @PlanID ) )
+                    BEGIN
+                        SET @Final = 'Self-Assessment';
+                    END;
+                ELSE
+                    IF ( EXISTS ( SELECT    PlanEvidenceID
+                                  FROM      dbo.EmplPlanEvidence
+                                  WHERE     PlanID = @PlanID ) )
+                        BEGIN
+                            SET @Final = 'Collect Evidence';
+                        END;
+                    ELSE
+                        BEGIN 
+                            SET @Final = '#N/A';
+                        END;
 	
-	return CASE WHEN @Final IS NULL THEN 'Plan' ELSE @Final END
-END
+        RETURN CASE WHEN @Final IS NULL THEN 'Plan' ELSE @Final END;
+    END;
 GO

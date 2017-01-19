@@ -10,29 +10,36 @@ GO
 -- Description:	This checks if any user is still logged via same IP address
 --  Returns 1 when true else null
 -- =============================================
-CREATE PROCEDURE [dbo].[CheckAnyUserLog] 	
-	@IpAddress AS nchar(15) 	
-	,@IsLogged AS int = null OUTPUT
-	
+CREATE PROCEDURE [dbo].[CheckAnyUserLog]
+    @IpAddress AS NCHAR(15) ,
+    @IsLogged AS INT = NULL OUTPUT
 AS
-BEGIN
+    BEGIN
 
-	SET NOCOUNT ON;
+        SET NOCOUNT ON;
 		
-	if exists(
-		select top 1 * from UserLog
-		where IpAddress=@IpAddress 
+        IF EXISTS ( SELECT TOP 1
+                            LogId ,
+                            UserId ,
+                            BrowserInfo ,
+                            LoginIssue ,
+                            CreatedDt ,
+                            LogoutDt ,
+                            IsOverridePwd ,
+                            UserLogOut ,
+                            IpAddress
+                    FROM    dbo.UserLog
+                    WHERE   IpAddress = @IpAddress 
 		--and logid= (select MAX(logid) from UserLog where UserId=@UserID)	
-		and UserLogOut=0
-		and LoginIssue ='Login Successful'
-		--and  DATEDIFF(MINUTE,CreatedDt,GETDATE())<15
+                            AND UserLogOut = 0
+                            AND LoginIssue = 'Login Successful' --and  DATEDIFF(MINUTE,CreatedDt,GETDATE())<15
 		)
-	Begin
-		Set @IsLogged=0;--1;
-	End
-print @IsLogged
+            BEGIN
+                SET @IsLogged = 0;--1;
+            END;
+        PRINT @IsLogged;
 
-END
+    END;
 
 
 GO
