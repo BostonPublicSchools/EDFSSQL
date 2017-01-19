@@ -42,8 +42,8 @@ AS
                                     LEFT OUTER JOIN CodeLookUp cdElementTag ON cdElementTag.CodeID = gt.GoalTagID
                                                               AND cdElementTag.CodeType = 'GoalTag'
                                     JOIN CodeLookUp cd ON cd.CodeType = 'GoalType'
-														AND cdElementTag.CodeSubText LIKE ( cd.CodeSubText )
-                                                          + CAST(cd.CodeID AS CHAR(250)) 
+                                                          AND cdElementTag.CodeSubText LIKE ( cd.CodeSubText )
+                                                          + CAST(cd.CodeID AS CHAR(250))
                             WHERE   gt.GoalID = g.GoalID
                           FOR
                             XML PATH('')
@@ -156,20 +156,20 @@ AS
                 JOIN PlanGoal AS g ( NOLOCK ) ON p.PlanID = g.PlanID
                 JOIN Empl AS ce ( NOLOCK ) ON g.CreatedByID = ce.EmplID
                 JOIN EmplEmplJob AS ej ( NOLOCK ) ON p.EmplJobID = ej.EmplJobID
-                LEFT JOIN SubevalAssignedEmplEmplJob sub ON ej.EmplJobID = sub.EmplJobID
-                                                            AND sub.IsActive = 1
+                LEFT JOIN SubevalAssignedEmplEmplJob sub ON sub.IsActive = 1
                                                             AND sub.IsDeleted = 0
                                                             AND sub.IsPrimary = 1
-                LEFT JOIN SubEval s ( NOLOCK ) ON sub.SubEvalID = s.EvalID
-                                                  AND s.EvalActive = 1
+                                                            AND ej.EmplJobID = sub.EmplJobID
+                LEFT JOIN SubEval s ( NOLOCK ) ON s.EvalActive = 1
+                                                  AND sub.SubEvalID = s.EvalID
                 JOIN Empl AS e ( NOLOCK ) ON ej.EmplID = e.EmplID
                 LEFT OUTER JOIN Empl AS me ( NOLOCK ) ON ej.MgrID = me.EmplID
                 JOIN CodeLookUp AS gt ( NOLOCK ) ON g.GoalTypeID = gt.CodeID
                 JOIN CodeLookUp AS gl ( NOLOCK ) ON g.GoalLevelID = gl.CodeID
                 JOIN CodeLookUp AS gs ( NOLOCK ) ON g.GoalStatusID = gs.CodeID
-                LEFT OUTER JOIN GoalEvaluationProgress AS gep ( NOLOCK ) ON g.GoalID = gep.GoalID
-                                                              AND gep.EvalId = COALESCE(@EvalID,
+                LEFT OUTER JOIN GoalEvaluationProgress AS gep ( NOLOCK ) ON gep.EvalId = COALESCE(@EvalID,
                                                               gep.EvalId)
+                                                              AND g.GoalID = gep.GoalID
                 LEFT OUTER JOIN CodeLookUp AS gp ( NOLOCK ) ON gep.ProgressCodeID = gp.CodeID
                 LEFT OUTER JOIN CodeLookUp AS oag ( NOLOCK ) ON p.GoalStatusID = oag.CodeID
                 LEFT OUTER JOIN CodeLookUp AS oagnyr ( NOLOCK ) ON p.MultiYearGoalStatusID = oagnyr.CodeID

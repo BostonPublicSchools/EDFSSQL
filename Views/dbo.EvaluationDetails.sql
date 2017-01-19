@@ -5,6 +5,7 @@ GO
 
 
 
+
 /* =============================================
  Author:		Newa,Matina
  Create date: 03/25/2013
@@ -13,19 +14,19 @@ GO
  =============================================*/
 CREATE VIEW [dbo].[EvaluationDetails]
 AS
-	with 
-		cte (PlanID, EmplJobId, JobCode, EmplId)
-	as
+	WITH 
+		cte (PlanID, EmplJobId, JobCode, EmplId, DeptID, UnionCode)
+	AS
 	(
 		SELECT
-			P.PlanID, ej.EmplJobID, ej.JobCode, ej.EmplId 
+			P.PlanID, ej.EmplJobID, ej.JobCode, ej.EmplId, ej.DeptID, j.UnionCode
 		FROM
 				EmplEmplJob AS ej (NOLOCK)
 			JOIN EmplJob AS j (NOLOCK) ON ej.JobCode = j.JobCode
-			JOIN EmplPlan AS p (NOLOCK) ON ej.EmplJobID = p.EmplJobID and p.IsInvalid = 0 
+			JOIN EmplPlan AS p (NOLOCK) ON ej.EmplJobID = p.EmplJobID AND p.IsInvalid = 0 
 	)
 	
-	select 
+	SELECT 
 		ev.EvalID
 		,ev.EvaluatorSignedDt [EvaluationReleaseDate]
 		,cd.CodeText [EvaluationType]
@@ -33,16 +34,16 @@ AS
 		,C.EmplID		
 		,(SELECT
 				NameLast + ', ' + NameFirst + ' ' + ISNULL(NameMiddle, '') + ' (' + EmplID + ')'
-			from
+			FROM
 				Empl
-			where
-				EmplID = c.EmplID) as EmplName
-		,ev.EvalManagerID as MgrID
+			WHERE
+				EmplID = c.EmplID) AS EmplName
+		,ev.EvalManagerID AS MgrID
 		,(SELECT ISNULL(e1.NameFirst, '')+ ' ' +ISNULL(e1.NameMiddle,'')+ ' '+ISNULL(e1.NameLast,'') 
-				FROM Empl e1 WHERE e1.EmplID = ev.EvalManagerID) as ManagerName
+				FROM Empl e1 WHERE e1.EmplID = ev.EvalManagerID) AS ManagerName
 		,ev.EvalSubEvalID AS SubEvalID
 		,(SELECT ISNULL(e1.NameFirst, '')+ ' ' +ISNULL(e1.NameMiddle,'')+ ' '+ISNULL(e1.NameLast,'')
-			 FROM Empl e1 WHERE e1.EmplID = ev.EvalSubEvalID ) as SubEvalName
+			 FROM Empl e1 WHERE e1.EmplID = ev.EvalSubEvalID ) AS SubEvalName
 		,d.DeptName
 		,cd_ep.CodeText [PlanType]
 		,TBL_SL.Progress [PROGRESS_SL]	
@@ -52,22 +53,25 @@ AS
 		,esIII.RatingText [StandardRatingIII]
 		,esIV.RatingText [StandardRatingIV]
 		,cd_orate.CodeText [OverallRating]
-		,(case 
-			when ep.PlanActive = 1 
-			then 'Yes' else 'No'
-		end) [CurrentPlan]--yes/no - currentPlanEnd		
-		,Isnull(CONVERT(varchar, ep.PlanSchedEndDt,101),'') [Schedule Plan End Date]
-		,Isnull(CONVERT(varchar, ep.PlanActEndDt,101),'') [Actual Plan End Date]
-		,Isnull((select top 1 CodeText from  CodeLookUp c where ep.PlanEndReasonID=c.CodeID and c.CodeType='PlanEndRsn'),'') [End Reason]
+		,(CASE 
+			WHEN ep.PlanActive = 1 
+			THEN 'Yes' ELSE 'No'
+		END) [CurrentPlan]--yes/no - currentPlanEnd		
+		,ISNULL(CONVERT(VARCHAR, ep.PlanSchedEndDt,101),'') [Schedule Plan End Date]
+		,ISNULL(CONVERT(VARCHAR, ep.PlanActEndDt,101),'') [Actual Plan End Date]
+		,ISNULL((SELECT TOP 1 CodeText FROM  CodeLookUp c WHERE ep.PlanEndReasonID=c.CodeID AND c.CodeType='PlanEndRsn'),'') [End Reason]
 		,ev.EvaluatorsSignature
+		,c.UnionCode
+		,c.JobCode
+		,c.DeptID
 	FROM 
 		Evaluation ev (NOLOCK)
-	JOIN cte c	on ev.PlanID = c.planid
+	JOIN cte c	ON ev.PlanID = c.planid
 	JOIN CodeLookUp cd (NOLOCK) ON  cd.CodeID = ev.EvalTypeID
-	join EmplEmplJob ej (NOLOCK) on c.EmplJobID = ej.EmplJobID
-	join Department d (NOLOCK) on ej.DeptID = d.DeptID
-	LEFT JOIN EmplExceptions AS emplEx(NOLOCK) on emplEx.EmplJobID = ej.EmplJobID
-	JOIN EmplPlan ep (NOLOCK) ON c.PlanID = ep.PlanID and ep.IsInvalid = 0 
+	JOIN EmplEmplJob ej (NOLOCK) ON c.EmplJobID = ej.EmplJobID
+	JOIN Department d (NOLOCK) ON ej.DeptID = d.DeptID
+	LEFT JOIN EmplExceptions AS emplEx(NOLOCK) ON emplEx.EmplJobID = ej.EmplJobID
+	JOIN EmplPlan ep (NOLOCK) ON c.PlanID = ep.PlanID AND ep.IsInvalid = 0 
 	JOIN CodeLookUp cd_ep (NOLOCK) ON  cd_ep.CodeID = ep.PlanTypeID
 	LEFT JOIN (SELECT
 					EvalID
@@ -76,9 +80,9 @@ AS
 								', ' + GoalTypeText + '-' + CAST(CodeText AS VARCHAR) 
 							FROM 
 								EvaluationGoals egl 
-							LEFT JOIN CodeLookUp cdProg on cdProg.CodeID = egl.ProgressCodeID
+							LEFT JOIN CodeLookUp cdProg ON cdProg.CodeID = egl.ProgressCodeID
 							WHERE 
-								(EvalID=Results.EvalID and GoalTypeID = Results.GoalTypeID) 
+								(EvalID=Results.EvalID AND GoalTypeID = Results.GoalTypeID) 
 							FOR XML PATH ('')),1,2,'') AS Progress
 				FROM
 					EvaluationGoals Results
@@ -94,9 +98,9 @@ AS
 								', ' + GoalTypeText + '-' + CAST(CodeText AS VARCHAR) 
 							FROM 
 								EvaluationGoals egl 
-							LEFT JOIN CodeLookUp cdProg on cdProg.CodeID = egl.ProgressCodeID
+							LEFT JOIN CodeLookUp cdProg ON cdProg.CodeID = egl.ProgressCodeID
 							WHERE 
-								(EvalID=Results.EvalID and GoalTypeID = Results.GoalTypeID) 
+								(EvalID=Results.EvalID AND GoalTypeID = Results.GoalTypeID) 
 							FOR XML PATH ('')),1,2,'') AS Progress
 				FROM
 					EvaluationGoals Results
@@ -105,39 +109,40 @@ AS
 				GROUP BY
 					EvalID
 					,GoalTypeID) TBL_SL ON TBL_SL.EvalID = EV.EvalID
-	LEFT JOIN (select 
+	LEFT JOIN (SELECT 
 					EvalID
 					,StandardText
 					,RatingText
-				from 
+				FROM 
 					EvaluationStandards 
-				where 
-					StandardText like 'I.%') esI ON esI.EvalID=ev.EvalID
-	LEFT JOIN (select 
+				WHERE 
+					StandardText LIKE 'I.%') esI ON esI.EvalID=ev.EvalID
+	LEFT JOIN (SELECT 
 					EvalID
 					,StandardText
 					,RatingText
-				from 
+				FROM 
 					EvaluationStandards 
-				where 
-					StandardText like 'II.%') esII ON esII.EvalID=ev.EvalID
-	LEFT JOIN (select 
+				WHERE 
+					StandardText LIKE 'II.%') esII ON esII.EvalID=ev.EvalID
+	LEFT JOIN (SELECT 
 					EvalID
 					,StandardText
 					,RatingText
-				from 
+				FROM 
 					EvaluationStandards 
-				where 
-					StandardText like 'III.%') esIII ON esIII.EvalID=ev.EvalID
-	LEFT JOIN (select 
+				WHERE 
+					StandardText LIKE 'III.%') esIII ON esIII.EvalID=ev.EvalID
+	LEFT JOIN (SELECT 
 					EvalID
 					,StandardText
 					,RatingText
-				from 
+				FROM 
 					EvaluationStandards 
-				where 
-					StandardText like 'IV.%') esIV ON esIV.EvalID=ev.EvalID															
+				WHERE 
+					StandardText LIKE 'IV.%') esIV ON esIV.EvalID=ev.EvalID															
 	LEFT JOIN CodeLookUp cd_orate ON  cd_orate.CodeID = ev.OverallRatingID
-	where 
-		ev.IsDeleted=0 and ((ev.IsSigned !=0 and ep.PlanActive = 0) OR (ep.PlanActive = 1))
+	WHERE 
+		ev.IsDeleted=0 AND ((ev.IsSigned !=0 AND ep.PlanActive = 0) OR (ep.PlanActive = 1))
+
 GO

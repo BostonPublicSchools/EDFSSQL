@@ -25,7 +25,8 @@ BEGIN
 	IF(Exists(SELECT PlanId FROM EmplPlan WHERE  EmplJobID = @ExEmplJobID AND PlanActive = 1 AND SubEvalID = @MgrID))
 	BEGIN
 	  UPDATE EmplPlan 
-	  SET SubEvalID = '000000',
+	  SET SubEvalID = dbo.funcGetPrimaryManagerByEmplID(@ExEmplID),
+	  PlanManagerID = dbo.funcGetPrimaryManagerByEmplID(@ExEmplID),
 	  LastUpdatedByID = @UserID,
 	  LastUpdatedDt = GETDATE()
 	  WHERE  EmplJobID = @ExEmplJobID AND PlanActive = 1 AND SubEvalID = @MgrID

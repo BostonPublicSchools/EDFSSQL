@@ -109,7 +109,7 @@ BEGIN
 		UPDATE EmplPlan
 		SET
 			SignatureAsmt = @SignatureAsmt
-			,DateSignedAsmt = GETDATE()
+			,DateSignedAsmt = (CASE WHEN @IsSignedAsmt=1 AND @SignatureAsmt <> '' THEN GETDATE() ELSE DateSignedAsmt END)
 			,PlanActive = @PlanActive
 			,PlanActEndDt = @PlanEndDate
 			,planendReasonID = @PlanEndReasonID

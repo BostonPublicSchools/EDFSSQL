@@ -11,23 +11,34 @@ GO
 -- exec getRubricPlanEndDate 1
 --add fetaure to work early plan year change
 -- =============================================
-CREATE PROCEDURE [dbo].[getRubricPlanEndDate]		
-	@RubricPlanTypeID int =null
-	,@RubricID int =null
+CREATE PROCEDURE [dbo].[getRubricPlanEndDate]
+       @RubricPlanTypeID INT = NULL ,
+       @RubricID INT = NULL
 AS
-BEGIN
-	SET NOCOUNT ON;
+       BEGIN
+             SET NOCOUNT ON;
 
-Declare @CurrentSchYear varchar(9), @NextSchYear varchar(9)  -- 2013-2014, 2014-2015
+             DECLARE @CurrentSchYear VARCHAR(9) ,
+                     @NextSchYear VARCHAR(9);  -- 2013-2014, 2014-2015
 
-set @CurrentSchYear = (select rtrim(SchYear) from SchoolCalendar where CalendarDate = convert(varchar,GETDATE(),101) ) 	
-set @NextSchYear = SUBSTRING(@CurrentSchYear,6,4)+'-'+Convert(varchar,( SUBSTRING(@CurrentSchYear,6,4) +1))
+             SET @CurrentSchYear = (
+                                     SELECT DISTINCT RTRIM(SchYear)
+                                     FROM   SchoolCalendar
+                                     WHERE  CalendarDate = CONVERT(VARCHAR, GETDATE(), 101)
+                                   ); 	
+             SET @NextSchYear = SUBSTRING(@CurrentSchYear, 6, 4) + '-'
+                 + CONVERT(VARCHAR, ( SUBSTRING(@CurrentSchYear, 6, 4) + 1 ));
 
-if exists(select * from dbo.PlanYearChangeTable)
-Begin
-	Select @CurrentSchYear = CONVERT(varchar,SchYearValue) from dbo.PlanYearChangeTable where SchYearType='First'
-	Select @NextSchYear = CONVERT(varchar,SchYearValue) from dbo.PlanYearChangeTable where SchYearType='Second'
-End
+             IF EXISTS ( SELECT *
+                         FROM   dbo.PlanYearChangeTable )
+                BEGIN
+                      SELECT    @CurrentSchYear = CONVERT(VARCHAR, SchYearValue)
+                      FROM      dbo.PlanYearChangeTable
+                      WHERE     SchYearType = 'First';
+                      SELECT    @NextSchYear = CONVERT(VARCHAR, SchYearValue)
+                      FROM      dbo.PlanYearChangeTable
+                      WHERE     SchYearType = 'Second';
+                END;
 --print @CurrentSchYear
 --print @NextSchYear
 --Note
@@ -40,69 +51,126 @@ End
 --print @tmp
 
 
-SELECT 
-	 rptedt.PlanEndDateID
-	,rpt.RubricPlanTypeID
-	,rpt.RubricID
-	,rptedt.EndTypeID
-	,cdE.CodeText [EndTypeText]
-	,rptedt.PlanEndDateTypeID
-	,cdEdt.CodeText [PlanEndDateTypeText]
-	,rptedt.DefaultPlanEndDate		
-	,rptedt.IsActive 
-	,rh.RubricName	
-	,rpt.PlanTypeID
-	,clRptPl.CodeText [PlanType]
-	,(Case	
-			When cdEdt.CodeText='End of Year One' Then (Case when Convert(int, substring(rptedt.DefaultPlanEndDate,1,CHARINDEX('/',rptedt.DefaultPlanEndDate)-1) ) <7 
-																then  RTrim(rptedt.DefaultPlanEndDate)+'/'+SUBSTRING(@CurrentSchYear,6,4) -- '1-6' 
-															else RTrim(rptedt.DefaultPlanEndDate)+'/'+SUBSTRING(@CurrentSchYear,1,4) -- '7-12'
-														End)
-			When cdEdt.CodeText='End of Year Two' Then (Case when Convert(int, substring(rptedt.DefaultPlanEndDate,1,CHARINDEX('/',rptedt.DefaultPlanEndDate)-1) ) <7 
-																then  RTrim(rptedt.DefaultPlanEndDate)+'/'+SUBSTRING(@NextSchYear,6,4) -- '1-6' 
-															else RTrim(rptedt.DefaultPlanEndDate)+'/'+SUBSTRING(@NextSchYear,1,4) -- '7-12'
-														End)
+             SELECT rptedt.PlanEndDateID ,
+                    rpt.RubricPlanTypeID ,
+                    rpt.RubricID ,
+                    rptedt.EndTypeID ,
+                    cdE.CodeText [EndTypeText] ,
+                    rptedt.PlanEndDateTypeID ,
+                    cdEdt.CodeText [PlanEndDateTypeText] ,
+                    rptedt.DefaultPlanEndDate ,
+                    rptedt.IsActive ,
+                    rh.RubricName ,
+                    rpt.PlanTypeID ,
+                    clRptPl.CodeText [PlanType] ,
+                    ( CASE WHEN cdEdt.CodeText = 'End of Year One'
+                           THEN ( CASE WHEN CONVERT(INT, SUBSTRING(rptedt.DefaultPlanEndDate,
+                                                              1,
+                                                              CHARINDEX('/',
+                                                              rptedt.DefaultPlanEndDate)
+                                                              - 1)) < 7
+                                       THEN RTRIM(rptedt.DefaultPlanEndDate)
+                                            + '/' + SUBSTRING(@CurrentSchYear,
+                                                              6, 4) -- '1-6' 
+                                       ELSE RTRIM(rptedt.DefaultPlanEndDate)
+                                            + '/' + SUBSTRING(@CurrentSchYear,
+                                                              1, 4) -- '7-12'
+                                  END )
+                           WHEN cdEdt.CodeText = 'End of Year Two'
+                           THEN ( CASE WHEN CONVERT(INT, SUBSTRING(rptedt.DefaultPlanEndDate,
+                                                              1,
+                                                              CHARINDEX('/',
+                                                              rptedt.DefaultPlanEndDate)
+                                                              - 1)) < 7
+                                       THEN RTRIM(rptedt.DefaultPlanEndDate)
+                                            + '/' + SUBSTRING(@NextSchYear, 6,
+                                                              4) -- '1-6' 
+                                       ELSE RTRIM(rptedt.DefaultPlanEndDate)
+                                            + '/' + SUBSTRING(@NextSchYear, 1,
+                                                              4) -- '7-12'
+                                  END )
 			--When cdEdt.CodeText = 'Duration Greater than' Then Convert(Varchar,1+ DATEADD(dd,CONVERT(int, rptedt.DefaultPlanEndDate),getdate() ),101 )			
-			When cdEdt.CodeText = 'Duration Greater than' 
-				Then  ( select top 1 calendarDate from schoolcalendar where calendardate >=
-					Convert(Varchar,1+ DATEADD(dd,CONVERT(int, rptedt.DefaultPlanEndDate),getdate() ),101 )
-						and isSchoolday=1 order by calendardate)
-		End ) as DefaultFullPlanEndDate
-	, rptedt.DefaultFormativeValue
-	,(Case	
-			When (rptedt.DefaultFormativeValue!='' or rptedt.DefaultFormativeValue is not null) and (  cdEdt.CodeText='End of Year One' or cdEdt.CodeText='End of Year Two' )
-				Then (Case when Convert(int, substring(rptedt.DefaultPlanEndDate,1,CHARINDEX('/',rptedt.DefaultFormativeValue)-1) ) <7 
-																then  RTrim(rptedt.DefaultFormativeValue)+'/'+SUBSTRING(@CurrentSchYear,6,4) -- '1-6' 
-															else RTrim(rptedt.DefaultFormativeValue)+'/'+SUBSTRING(@CurrentSchYear,1,4) -- '7-12'
-														End)
-				else ISNULL(rptedt.DefaultFormativeValue,'')
-	   End) as DefaultFormativeDate	
-	,Isnull(rptedt.DefaultPlanEndDateMax,'') DefaultPlanEndDateMax
-	,(Case					
-		When cdEdt.CodeText = 'Duration Greater than' And rptedt.DefaultPlanEndDateMax is not null
-			Then Convert(Varchar(10), ISNULL( (select top 1 calendarDate from schoolcalendar where calendardate >=
-												Convert(Varchar,1+ DATEADD(dd,CONVERT(int, rptedt.DefaultPlanEndDateMax),getdate() ),101 )
-													and isSchoolday=1 order by calendardate) 
-											  , (Select Convert(Varchar,1+ DATEADD(dd,CONVERT(int, rptedt.DefaultPlanEndDateMax),getdate() ),101) ) --(Select top 1 CalendarDate from schoolcalendar where isSchoolday=1 order by calendardate desc)
-											  )
-					 )
-	End ) as DefaultFullPlanEndDateMax	-- TAKES MAX DATE 364days OF CALENDAR IF DATE IS NOT IN CALENDAR
- 
- 
-FROM 
-	RubricPlanType rpt
-	inner join RubricPlanTypeEndDate rptedt on rpt.RubricPlanTypeID= rptedt.RubricPlanTypeID
-	inner join CodeLookUp cdEdt on rptedt.PlanEndDateTypeID = cdEdt.CodeID and cdEdt.CodeType='EndDtType' and cdEdt.CodeActive=1
-	inner join CodeLookUp cdE on rptedt.EndTypeID = cdE.CodeID and cdE.CodeType='EndType' and cdE.CodeActive=1
-	inner join RubricHdr rh on rh.RubricID=rpt.RubricID
-	left join CodeLookUp clRptPl on clRptPl.CodeID =rpt.PlanTypeID and clRptPl.CodeType='PlanType'
+                           WHEN cdEdt.CodeText = 'Duration Greater than'
+                           THEN (
+                                  SELECT TOP 1
+                                            CalendarDate
+                                  FROM      SchoolCalendar
+                                  WHERE     CalendarDate >= CONVERT(VARCHAR, 1
+                                            + DATEADD(dd,
+                                                      CONVERT(INT, rptedt.DefaultPlanEndDate),
+                                                      GETDATE()), 101)
+                                            AND IsSchoolDay = 1
+                                  ORDER BY  CalendarDate
+                                )
+                      END ) AS DefaultFullPlanEndDate ,
+                    rptedt.DefaultFormativeValue ,
+                    ( CASE WHEN ( rptedt.DefaultFormativeValue != ''
+                                  OR rptedt.DefaultFormativeValue IS NOT NULL
+                                )
+                                AND ( cdEdt.CodeText = 'End of Year One'
+                                      OR cdEdt.CodeText = 'End of Year Two'
+                                    )
+                           THEN ( CASE WHEN CONVERT(INT, SUBSTRING(rptedt.DefaultPlanEndDate,
+                                                              1,
+                                                              CHARINDEX('/',
+                                                              rptedt.DefaultFormativeValue)
+                                                              - 1)) < 7
+                                       THEN RTRIM(rptedt.DefaultFormativeValue)
+                                            + '/' + SUBSTRING(@CurrentSchYear,
+                                                              6, 4) -- '1-6' 
+                                       ELSE RTRIM(rptedt.DefaultFormativeValue)
+                                            + '/' + SUBSTRING(@CurrentSchYear,
+                                                              1, 4) -- '7-12'
+                                  END )
+                           ELSE ISNULL(rptedt.DefaultFormativeValue, '')
+                      END ) AS DefaultFormativeDate ,
+                    ISNULL(rptedt.DefaultPlanEndDateMax, '') DefaultPlanEndDateMax ,
+                    ( CASE WHEN cdEdt.CodeText = 'Duration Greater than'
+                                AND rptedt.DefaultPlanEndDateMax IS NOT NULL
+                           THEN CONVERT(VARCHAR(10), ISNULL((
+                                                              SELECT TOP 1
+                                                              CalendarDate
+                                                              FROM
+                                                              SchoolCalendar
+                                                              WHERE
+                                                              CalendarDate >= CONVERT(VARCHAR, 1
+                                                              + DATEADD(dd,
+                                                              CONVERT(INT, rptedt.DefaultPlanEndDateMax),
+                                                              GETDATE()), 101)
+                                                              AND IsSchoolDay = 1
+                                                              ORDER BY CalendarDate
+                                                            ),
+                                                            (
+                                                              SELECT
+                                                              CONVERT(VARCHAR, 1
+                                                              + DATEADD(dd,
+                                                              CONVERT(INT, rptedt.DefaultPlanEndDateMax),
+                                                              GETDATE()), 101)
+                                                            )--(Select top 1 CalendarDate from schoolcalendar where isSchoolday=1 order by calendardate desc)
+											  ))
+                      END ) AS DefaultFullPlanEndDateMax	-- TAKES MAX DATE 364days OF CALENDAR IF DATE IS NOT IN CALENDAR
+             FROM   RubricPlanType rpt
+             INNER JOIN RubricPlanTypeEndDate rptedt ON rpt.RubricPlanTypeID = rptedt.RubricPlanTypeID
+             INNER JOIN CodeLookUp cdEdt ON rptedt.PlanEndDateTypeID = cdEdt.CodeID
+                                            AND cdEdt.CodeType = 'EndDtType'
+                                            AND cdEdt.CodeActive = 1
+             INNER JOIN CodeLookUp cdE ON rptedt.EndTypeID = cdE.CodeID
+                                          AND cdE.CodeType = 'EndType'
+                                          AND cdE.CodeActive = 1
+             INNER JOIN RubricHdr rh ON rh.RubricID = rpt.RubricID
+             LEFT JOIN CodeLookUp clRptPl ON clRptPl.CodeID = rpt.PlanTypeID
+                                             AND clRptPl.CodeType = 'PlanType'
+             WHERE  rpt.IsActive = 1 --AND rptedt.IsActive=1	
+                    AND rptedt.RubricPlanTypeID = ( CASE WHEN @RubricPlanTypeID IS NOT NULL
+                                                         THEN @RubricPlanTypeID
+                                                         ELSE rptedt.RubricPlanTypeID
+                                                    END )
+                    AND rpt.RubricID = ( CASE WHEN @RubricID IS NOT NULL
+                                              THEN @RubricID
+                                              ELSE rpt.RubricID
+                                         END );
 	
-WHERE 
-	rpt.IsActive=1 --AND rptedt.IsActive=1	
-	AND rptedt.RubricPlanTypeID = ( case when @RubricPlanTypeID IS NOT NULL then @RubricPlanTypeID else rptedt.RubricPlanTypeID end )
-	AND rpt.RubricID = (CASE WHEN @RubricID IS NOT NULL THEN @RubricID ELSE rpt.RubricID END)
-	
-END
+       END;
 
 
 GO
