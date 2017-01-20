@@ -9,84 +9,143 @@ GO
 -- Description:	Filters the artifacts. It depends upon the filter criteria- Rubric, goal, standard and indicator tags 
 --				exec FilterArtifacts_results @RubricID=1,@StandardFilter='',@IndicatorFilter='',@GoalFilter='7'
 -- =============================================
-CREATE PROCEDURE [dbo].[FilterArtifacts_Results] 
-	@RubricID int=1,
-	@StandardFilter varchar(max)= null,
-	@IndicatorFilter varchar(max) = null,
-	@GoalFilter varchar(max) =null
-
+CREATE PROCEDURE [dbo].[FilterArtifacts_Results]
+    @RubricID INT = 1 ,
+    @StandardFilter VARCHAR(MAX) = NULL ,
+    @IndicatorFilter VARCHAR(MAX) = NULL ,
+    @GoalFilter VARCHAR(MAX) = NULL
 AS
-BEGIN
+    BEGIN
 
-if @StandardFilter=''
-	set @StandardFilter=N'null'
-if @IndicatorFilter=''	
-	set @IndicatorFilter=N'null'	
-if @GoalFilter =''
-	set @GoalFilter=N'null'
+        IF @StandardFilter = ''
+            SET @StandardFilter = N'null';
+        IF @IndicatorFilter = ''
+            SET @IndicatorFilter = N'null';	
+        IF @GoalFilter = ''
+            SET @GoalFilter = N'null';
 
 	
-Declare @Sqlcte nvarchar(max)
-Declare @SqlResult nvarchar(max)
+        DECLARE @Sqlcte NVARCHAR(MAX);
+        DECLARE @SqlResult NVARCHAR(MAX);
 
-Set @Sqlcte= 
-	N' WITH Evidence_cte AS
-    (
-		select distinct ev.EvidenceID,epe.PlanID, (e.NameLast +'', '' +e.NameFirst )[Employee]
-				,ev.FileName,ev.FileExt, CONVERT(datetime, Convert(varchar(10),ev.CreatedByDt,110),111) [CreatedByDt]
-				, (evempl.NameLast +'', '' +evempl.NameFirst )[CreatedBy], ev.CreatedByID
-				,ej.EmplJobID, e.EmplID
-		from Evidence ev 
-		inner join EmplPlanEvidence epe on epe.EvidenceID =ev.EvidenceID 
-		inner join EmplPlan ep on ep.PlanID = epe.PlanID and ep.IsInvalid = 0
-		inner join EmplEmplJob ej on ep.EmplJobID =ej.EmplJobID
-		inner join Empl e on ej.EmplID=e.EmplID
-		inner join Empl evempl on ev.CreatedByID=evempl.EmplID
-		where epe.IsDeleted=0 and ev.IsDeleted=0 and ej.rubricid='+ cast(@RubricID as varchar)+'
-		and  epe.EvidenceID in( 
-		   select distinct(evd_stnd.EvidenceID) from EmplPlanEvidence evd_stnd
-		   where (evd_stnd.EvidenceTypeID in(109) AND evd_stnd.isdeleted=0 AND evd_stnd.ForeignID in('+@StandardFilter+') ) OR 
-				(evd_stnd.EvidenceTypeID=265 AND evd_stnd.isdeleted=0 AND evd_stnd.ForeignID in('+@IndicatorFilter+'))	  
-		   UNION	   
-		   select distinct(evd_goal.EvidenceID) from EmplPlanEvidence evd_goal
-				inner join PlanGoal pl on evd_goal.PlanID=pl.PlanID
-		   where evd_goal.EvidenceTypeID=108 AND evd_goal.isdeleted=0 AND
-				 evd_goal.ForeignID=pl.goalid AND evd_goal.planId=pl.planId AND pl.GoalTypeID in('+@GoalFilter+') )
-		 )		-- select distinct * from Evidence_cte order by evidenceid; '
-		 
-Set @SqlResult=@Sqlcte + N'	
-   SELECT * FROM (
-	   select distinct ev_outside.EvidenceID,ev_outside.PlanID, ev_outside.Employee, ev_outside.emplID
-			,ev_outside.FileName,ev_outside.FileExt,ev_outside.CreatedByDt,ev_outside.CreatedBy,ev_outside.CreatedByID
-			, ev_outside.EmplJobID
-			,(select stuff((select '', ''+ CAST(StandardText as varchar(max)) --+ CAST(StandardID as varchar(max) ) 
-				from EmplPlanEvidence evd_tag inner join RubricStandard rs on evd_tag.ForeignID=rs.StandardID 
-				where evd_tag.EvidenceID=ev_outside.EvidenceID and evd_tag.EvidenceTypeID=109 and rs.IsDeleted=0
-				order by rs.StandardText
-				for xml path ('''')),1,1,'''')
-			 ) as StandardTags	 
-			,(select stuff((select '', ''+ CAST(ri.IndicatorText as varchar(max)) -- + CAST(ri.IndicatorID as varchar(max) )
-				from EmplPlanEvidence evd_tag inner join RubricIndicator ri on evd_tag.ForeignID=ri.IndicatorID 
-				where evd_tag.EvidenceID=ev_outside.EvidenceID and evd_tag.EvidenceTypeID=265 and ri.IsDeleted=0
-				order by ri.IndicatorText
-				for xml path ('''')),1,1,'''')
-				
-			 ) as IndicatorTags	 
-			,(select stuff((select '', ''+ CAST(cl.CodeText as varchar(max)) --+ CAST(cl.CodeID as varchar(max) )
-				from EmplPlanEvidence evd_tag inner join plangoal pg on evd_tag.ForeignID=pg.GoalID inner join CodeLookUp cl on pg.GoalTypeID=cl.CodeID
-				where evd_tag.EvidenceID=ev_outside.EvidenceID and evd_tag.EvidenceTypeID=108 and pg.IsDeleted=0 and cl.CodeType=''GoalType''
-				order by cl.CodeText
-				for xml path ('''')),1,1,'''')
-			 ) as GoalTags
-			
-	   from Evidence_cte ev_outside  ) AS MainResult order by EvidenceID desc '
-  
---print @SqlResult
---print '##############'
-
-EXEC SP_EXECUTESQL @SqlResult;
-
-
-END
+        WITH    Evidence_cte
+                  AS ( SELECT DISTINCT
+                                ev.EvidenceID ,
+                                epe.PlanID ,
+                                ( e.NameLast + ', ' + e.NameFirst ) Employee ,
+                                ev.FileName ,
+                                ev.FileExt ,
+                                CONVERT(DATETIME, CONVERT(VARCHAR(10), ev.CreatedByDt, 110), 111) [CreatedByDt] ,
+                                ( evempl.NameLast + ', ' + evempl.NameFirst ) CreatedBy ,
+                                ev.CreatedByID ,
+                                ej.EmplJobID ,
+                                e.EmplID
+                       FROM     Evidence ev
+                                INNER JOIN EmplPlanEvidence epe ON epe.EvidenceID = ev.EvidenceID
+                                INNER JOIN EmplPlan ep ON ep.PlanID = epe.PlanID
+                                                          AND ep.IsInvalid = 0
+                                INNER JOIN EmplEmplJob ej ON ep.EmplJobID = ej.EmplJobID
+                                INNER JOIN Empl e ON ej.EmplID = e.EmplID
+                                INNER JOIN Empl evempl ON ev.CreatedByID = evempl.EmplID
+                       WHERE    epe.IsDeleted = 0
+                                AND ev.IsDeleted = 0
+                                AND ej.RubricID = @RubricID
+                                AND epe.EvidenceID IN (
+                                SELECT DISTINCT
+                                        ( evd_stnd.EvidenceID )
+                                FROM    EmplPlanEvidence evd_stnd
+                                WHERE   ( evd_stnd.EvidenceTypeID IN ( 109 )
+                                          AND evd_stnd.IsDeleted = 0
+                                          AND evd_stnd.ForeignID IN (
+                                          SELECT    Item
+                                          FROM      dbo.SplitInts(@StandardFilter,
+                                                              ',') )
+                                        )
+                                        OR ( evd_stnd.EvidenceTypeID = 265
+                                             AND evd_stnd.IsDeleted = 0
+                                             AND evd_stnd.ForeignID IN (
+                                             SELECT Item
+                                             FROM   dbo.SplitInts(@IndicatorFilter,
+                                                              ',') )
+                                           )
+                                UNION
+                                SELECT DISTINCT
+                                        ( evd_goal.EvidenceID )
+                                FROM    EmplPlanEvidence evd_goal
+                                        INNER JOIN PlanGoal pl ON evd_goal.PlanID = pl.PlanID
+                                WHERE   evd_goal.EvidenceTypeID = 108
+                                        AND evd_goal.IsDeleted = 0
+                                        AND evd_goal.ForeignID = pl.GoalID
+                                        AND evd_goal.PlanID = pl.PlanID
+                                        AND pl.GoalTypeID IN (
+                                        SELECT  Item
+                                        FROM    dbo.SplitInts(@GoalFilter, ',') ) )
+                     )
+            SELECT  MainResult.EvidenceID ,
+                    MainResult.PlanID ,
+                    MainResult.Employee ,
+                    MainResult.EmplID ,
+                    MainResult.FileName ,
+                    MainResult.FileExt ,
+                    MainResult.CreatedByDt ,
+                    MainResult.CreatedBy ,
+                    MainResult.CreatedByID ,
+                    MainResult.EmplJobID ,
+                    MainResult.StandardTags ,
+                    MainResult.IndicatorTags ,
+                    MainResult.GoalTags
+            FROM    ( SELECT DISTINCT
+                                ev_outside.EvidenceID ,
+                                ev_outside.PlanID ,
+                                ev_outside.Employee ,
+                                ev_outside.EmplID ,
+                                ev_outside.FileName ,
+                                ev_outside.FileExt ,
+                                ev_outside.CreatedByDt ,
+                                ev_outside.CreatedBy ,
+                                ev_outside.CreatedByID ,
+                                ev_outside.EmplJobID ,
+                                ( SELECT    STUFF(( SELECT  ', '
+                                                            + CAST(StandardText AS VARCHAR(MAX))
+                                                    FROM    EmplPlanEvidence evd_tag
+                                                            INNER JOIN RubricStandard rs ON evd_tag.ForeignID = rs.StandardID
+                                                    WHERE   evd_tag.EvidenceID = ev_outside.EvidenceID
+                                                            AND evd_tag.EvidenceTypeID = 109
+                                                            AND rs.IsDeleted = 0
+                                                    ORDER BY rs.StandardText
+                                                  FOR
+                                                    XML PATH('')
+                                                  ), 1, 1, '')
+                                ) AS StandardTags ,
+                                ( SELECT    STUFF(( SELECT  ', '
+                                                            + CAST(ri.IndicatorText AS VARCHAR(MAX))
+                                                    FROM    EmplPlanEvidence evd_tag
+                                                            INNER JOIN RubricIndicator ri ON evd_tag.ForeignID = ri.IndicatorID
+                                                    WHERE   evd_tag.EvidenceID = ev_outside.EvidenceID
+                                                            AND evd_tag.EvidenceTypeID = 265
+                                                            AND ri.IsDeleted = 0
+                                                    ORDER BY ri.IndicatorText
+                                                  FOR
+                                                    XML PATH('')
+                                                  ), 1, 1, '')
+                                ) AS IndicatorTags ,
+                                ( SELECT    STUFF(( SELECT  ', '
+                                                            + CAST(cl.CodeText AS VARCHAR(MAX))
+                                                    FROM    EmplPlanEvidence evd_tag
+                                                            INNER JOIN PlanGoal pg ON evd_tag.ForeignID = pg.GoalID
+                                                            INNER JOIN CodeLookUp cl ON pg.GoalTypeID = cl.CodeID
+                                                    WHERE   evd_tag.EvidenceID = ev_outside.EvidenceID
+                                                            AND evd_tag.EvidenceTypeID = 108
+                                                            AND pg.IsDeleted = 0
+                                                            AND cl.CodeType = 'GoalType'
+                                                    ORDER BY cl.CodeText
+                                                  FOR
+                                                    XML PATH('')
+                                                  ), 1, 1, '')
+                                ) AS GoalTags
+                      FROM      Evidence_cte ev_outside
+                    ) AS MainResult
+            ORDER BY EvidenceID DESC;
+    END;
 
 GO
