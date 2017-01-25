@@ -8,56 +8,64 @@ GO
 -- Description:	update evaluation prescription 
 -- =============================================
 CREATE PROCEDURE [dbo].[updEvaluationPrescription]
-	@PrescriptionID int
-	,@IndicatorID as int
-	,@ProblemStmt as nvarchar(max) = null
-	,@EvidenceStmt as nvarchar(max) = null
-	,@IsDeleted as bit
-	,@PrescriptionStmt as nvarchar(max) = null
-	,@UserID as varchar(6) = null
-	
+    @PrescriptionID INT ,
+    @IndicatorID AS INT ,
+    @ProblemStmt AS NVARCHAR(MAX) = NULL ,
+    @EvidenceStmt AS NVARCHAR(MAX) = NULL ,
+    @IsDeleted AS BIT ,
+    @PrescriptionStmt AS NVARCHAR(MAX) = NULL ,
+    @UserID AS VARCHAR(6) = NULL
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 	
 	
 	
-	IF @IsDeleted is null
-	BEGIN
-		SELECT @IsDeleted = IsDeleted
-		FROM EvaluationPrescription 
-		WHERE PrescriptionId = @PrescriptionID
-	END
+        IF @IsDeleted IS NULL
+            BEGIN
+                SELECT  @IsDeleted = IsDeleted
+                FROM    dbo.EvaluationPrescription
+                WHERE   PrescriptionId = @PrescriptionID;
+            END;
 	
-	UPDATE EvaluationPrescription
-		SET IndicatorID = @IndicatorID
-			,ProblemStmt = @ProblemStmt
-			,EvidenceStmt = @EvidenceStmt
-			,PrscriptionStmt = @PrescriptionStmt
-			,IsDeleted = @IsDeleted
-			,LastUpdatedByID = @UserID
-			,LastUpdatedDt = GETDATE()
-	WHERE PrescriptionId = @PrescriptionID
+        UPDATE  dbo.EvaluationPrescription
+        SET     IndicatorID = @IndicatorID ,
+                ProblemStmt = @ProblemStmt ,
+                EvidenceStmt = @EvidenceStmt ,
+                PrscriptionStmt = @PrescriptionStmt ,
+                IsDeleted = @IsDeleted ,
+                LastUpdatedByID = @UserID ,
+                LastUpdatedDt = GETDATE()
+        WHERE   PrescriptionId = @PrescriptionID;
 	
 	--WHEN all the prescription of evalid mentioned is deleted , change the status of hasprescript in the emplPlan table if the prescript evalId is the same.
-	DECLARE @EvalID as int
-	SELECT @EvalID = EvalID FROM EvaluationPrescription WHERE PrescriptionId = @PrescriptionID
-	IF NOT EXISTS(SELECT * FROM EvaluationPrescription evprs
-					JOIN Evaluation ev on ev.EvalID = evprs.EvalID
-					JOIN EmplPlan ep on ep.PlanID = ev.PlanID and ep.PrescriptEvalID = ev.EvalID
-					AND evprs.IsDeleted = 0 and evprs.EvalID = @EvalID)
-	BEGIN
-		UPDATE EmplPlan
-		SET HasPrescript = 0,
-		PrescriptEvalID = NULL,
-		LastUpdatedByID = @UserID,
-		LastUpdatedDt = GETDATE()
-		WHERE PlanID in (SELECT ep.PlanID FROM EmplPlan ep 
-						 WHERE PrescriptEvalID = (SELECT evalID FROM EvaluationPrescription epsr 
-												 WHERE epsr.PrescriptionId = @PrescriptionID)
-												 AND HasPrescript = 1)
+        DECLARE @EvalID AS INT;
+        SELECT  @EvalID = EvalID
+        FROM    dbo.EvaluationPrescription
+        WHERE   PrescriptionId = @PrescriptionID;
+        IF NOT EXISTS ( SELECT  evprs.PrescriptionId
+                        FROM    dbo.EvaluationPrescription evprs
+                                JOIN dbo.Evaluation ev ON ev.EvalID = evprs.EvalID
+                                JOIN dbo.EmplPlan ep ON ep.PlanID = ev.PlanID
+                                                    AND ep.PrescriptEvalID = ev.EvalID
+                                                    AND evprs.IsDeleted = 0
+                                                    AND evprs.EvalID = @EvalID )
+            BEGIN
+                UPDATE  dbo.EmplPlan
+                SET     HasPrescript = 0 ,
+                        PrescriptEvalID = NULL ,
+                        LastUpdatedByID = @UserID ,
+                        LastUpdatedDt = GETDATE()
+                WHERE   PlanID IN (
+                        SELECT  ep.PlanID
+                        FROM    dbo.EmplPlan ep
+                        WHERE   ep.PrescriptEvalID = ( SELECT  epsr.EvalID
+                                                    FROM    dbo.EvaluationPrescription epsr
+                                                    WHERE   epsr.PrescriptionId = @PrescriptionID
+                                                  )
+                                AND ep.HasPrescript = 1 );
 		
-	END					
-END
+            END;					
+    END;
 
 GO

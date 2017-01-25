@@ -7,15 +7,57 @@ GO
 -- Create date: <Create Date,,>
 -- Description:	<Description,,>
 -- =============================================
-CREATE PROCEDURE [dbo].[getAllPeopleSoftEmplEmployee]
-	@EmplID nchar(6)	
+CREATE PROCEDURE [dbo].[getAllPeopleSoftEmplEmployee] @EmplID NCHAR(6)
 AS
-BEGIN
+    BEGIN
 	
-	SET NOCOUNT ON;
+        SET NOCOUNT ON;
 	
-	Select  * from PeopleSoftEmployee 
-	Where emplID=@EmplID
+        SELECT  EmplID ,
+                EmplRCD ,
+                EffectiveDate ,
+                EffectiveSequence ,
+                Name ,
+                AddressLine1 ,
+                AddressLine2 ,
+                City ,
+                State ,
+                PostalCode ,
+                HomePhone ,
+                WorkPhone ,
+                NationalID ,
+                OriginalStartDate ,
+                Gender ,
+                DateOfBirth ,
+                EthnicGroup ,
+                DisabledVeteran ,
+                MilitaryStatus ,
+                ExpectedReturnDate ,
+                TeminationDate ,
+                UnionCode ,
+                UnionSeniorityDate ,
+                Department ,
+                DepartmentName ,
+                JobCode ,
+                JobTitle ,
+                PayrollStatus ,
+                Action ,
+                ActionDate ,
+                ReasonCode ,
+                LocationCode ,
+                PositonNumber ,
+                PayGroup ,
+                CompensationRate ,
+                CompensationFrequency ,
+                SalaryGrade ,
+                Step ,
+                SalaryAdministrationPlan ,
+                AnnualRate ,
+                ServiceDate ,
+                FTE ,
+                ImportDate
+        FROM    dbo.PeopleSoftEmployee
+        WHERE   EmplID = @EmplID;
    
-END
+    END;
 GO

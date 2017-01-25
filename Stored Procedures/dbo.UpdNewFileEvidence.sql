@@ -7,21 +7,35 @@ GO
 -- Create date: 02/12/2013
 -- Description:	Copy the new 
 -- =============================================
-Create PROCEDURE [dbo].[UpdNewFileEvidence]
-	@EvidenceID int
-	,@Description as nvarchar(250) = null
-	,@Rationale as nvarchar(max) =null
-	,@FileName as varchar(32) = null
-	,@FileExt as varchar(5) = null
-	,@FileSize int = null
-	,@UserID as varchar(6) = null
-	,@NewEvidenceID as int OUTPUT
-	
+CREATE PROCEDURE [dbo].[UpdNewFileEvidence]
+    @EvidenceID INT ,
+    @Description AS NVARCHAR(250) = NULL ,
+    @Rationale AS NVARCHAR(MAX) = NULL ,
+    @FileName AS VARCHAR(32) = NULL ,
+    @FileExt AS VARCHAR(5) = NULL ,
+    @FileSize INT = NULL ,
+    @UserID AS VARCHAR(6) = NULL ,
+    @NewEvidenceID AS INT OUTPUT
 AS
-BEGIN
-	SET NOCOUNT ON;
-	select * from Evidence
+    BEGIN
+        SET NOCOUNT ON;
+        SELECT  EvidenceID ,
+                FileName ,
+                FileExt ,
+                FileSize ,
+                IsDeleted ,
+                CreatedByID ,
+                CreatedByDt ,
+                LastUpdatedByID ,
+                LastUpdatedDt ,
+                Description ,
+                Rationale ,
+                IsEvidenceViewed ,
+                EvidenceViewedDt ,
+                EvidenceViewedBy ,
+                LastCommentViewDt
+        FROM    dbo.Evidence;
 	
 
-END
+    END;
 GO

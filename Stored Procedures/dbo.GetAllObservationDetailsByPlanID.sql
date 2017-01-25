@@ -7,69 +7,79 @@ GO
 -- Create date: 12/03/2012
 -- Description:	Get all the observation detail by plan ID
 -- =============================================
-CREATE PROCEDURE [dbo].[GetAllObservationDetailsByPlanID]
-	@PlanID int
+CREATE PROCEDURE [dbo].[GetAllObservationDetailsByPlanID] @PlanID INT
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 		
-	WITH [allObsDetail] AS(
-	
-	SELECT	
-			od.ObsvDID
-			,od.ObsvID 
-			,od.ObsvDEvidence
-			,od.ObsvDFeedBack
-			,od.IsDeleted 
-			,null AS parentIndicatorText
-			,0 AS parentIndicatorID
-			,0 as IndicatorID
-			,null as IndicatorText
-			,null as IndicatorDesc
-			,0 as StandardID
-			,null as StandardText			
-			,oh.ObsvDt
-			,oh.CreatedByDt
-			,oh.ObsvRelease
-	FROM ObservationHeader Oh
-	JOIN ObservationDetail od ON od.ObsvID = oh.ObsvID	
-	WHERE 
-	oh.IsDeleted = 0 AND
-	oh.PlanID =@PlanID 
-	AND oh.ObsvRelease = 1 AND (oh.ObsvReleaseDt IS NOT NULL 
-							AND ((CONVERT(date, oh.ObsvReleaseDt) <= (Convert(date, dbo.GetSchoolWorkingDate(oh.ObsvDt) ))  )))
-	
-	UNION
-	
-	SELECT	
-			od.ObsvDID
-			,od.ObsvID 
-			,od.ObsvDEvidence
-			,od.ObsvDFeedBack
-			,od.IsDeleted 
-			,null AS parentIndicatorText
-			,0 AS parentIndicatorID
-			,0  as IndicatorID
-			,null as IndicatorText
-			,null as IndicatorDesc
-			,0 as StandardID
-			,null as StandardText			
-			,oh.ObsvDt
-			,oh.CreatedByDt
-			,oh.ObsvRelease
-	FROM ObservationHeader Oh
-	JOIN ObservationDetail od ON od.ObsvID = oh.ObsvID	
-	WHERE 
-		oh.IsDeleted = 0 AND
-		oh.PlanID =@PlanID 
-		AND oh.ObsvRelease = 1 AND (oh.ObsvReleaseDt IS NOT NULL 
-					AND ((CONVERT(date, oh.ObsvReleaseDt) <= (Convert(date, dbo.GetSchoolWorkingDate(oh.ObsvDt)))))))
-	
-	SELECT * FROM allObsDetail
-	WHERE IsDeleted = 0
-	ORDER BY 
-	CreatedByDt desc
+        WITH    allObsDetail
+                  AS ( SELECT   od.ObsvDID ,
+                                od.ObsvID ,
+                                od.ObsvDEvidence ,
+                                od.ObsvDFeedBack ,
+                                od.IsDeleted ,
+                                NULL AS parentIndicatorText ,
+                                0 AS parentIndicatorID ,
+                                0 AS IndicatorID ,
+                                NULL AS IndicatorText ,
+                                NULL AS IndicatorDesc ,
+                                0 AS StandardID ,
+                                NULL AS StandardText ,
+                                Oh.ObsvDt ,
+                                Oh.CreatedByDt ,
+                                Oh.ObsvRelease
+                       FROM     dbo.ObservationHeader Oh
+                                JOIN dbo.ObservationDetail od ON od.ObsvID = Oh.ObsvID
+                       WHERE    Oh.IsDeleted = 0
+                                AND Oh.PlanID = @PlanID
+                                AND Oh.ObsvRelease = 1
+                                AND ( Oh.ObsvReleaseDt IS NOT NULL
+                                      AND ( (CONVERT(DATE, Oh.ObsvReleaseDt) <= ( CONVERT(DATE, dbo.GetSchoolWorkingDate(Oh.ObsvDt)) )  ) )
+                                    )
+                       UNION
+                       SELECT   od.ObsvDID ,
+                                od.ObsvID ,
+                                od.ObsvDEvidence ,
+                                od.ObsvDFeedBack ,
+                                od.IsDeleted ,
+                                NULL AS parentIndicatorText ,
+                                0 AS parentIndicatorID ,
+                                0 AS IndicatorID ,
+                                NULL AS IndicatorText ,
+                                NULL AS IndicatorDesc ,
+                                0 AS StandardID ,
+                                NULL AS StandardText ,
+                                Oh.ObsvDt ,
+                                Oh.CreatedByDt ,
+                                Oh.ObsvRelease
+                       FROM     dbo.ObservationHeader Oh
+                                JOIN dbo.ObservationDetail od ON od.ObsvID = Oh.ObsvID
+                       WHERE    Oh.IsDeleted = 0
+                                AND Oh.PlanID = @PlanID
+                                AND Oh.ObsvRelease = 1
+                                AND ( Oh.ObsvReleaseDt IS NOT NULL
+                                      AND ( (CONVERT(DATE, Oh.ObsvReleaseDt) <= ( CONVERT(DATE, dbo.GetSchoolWorkingDate(Oh.ObsvDt)) )) )
+                                    )
+                     )
+            SELECT  allObsDetail.ObsvDID ,
+                    allObsDetail.ObsvID ,
+                    allObsDetail.ObsvDEvidence ,
+                    allObsDetail.ObsvDFeedBack ,
+                    allObsDetail.IsDeleted ,
+                    allObsDetail.parentIndicatorText ,
+                    allObsDetail.parentIndicatorID ,
+                    allObsDetail.IndicatorID ,
+                    allObsDetail.IndicatorText ,
+                    allObsDetail.IndicatorDesc ,
+                    allObsDetail.StandardID ,
+                    allObsDetail.StandardText ,
+                    allObsDetail.ObsvDt ,
+                    allObsDetail.CreatedByDt ,
+                    allObsDetail.ObsvRelease
+            FROM    allObsDetail
+            WHERE   allObsDetail.IsDeleted = 0
+            ORDER BY allObsDetail.CreatedByDt DESC;
 	
 
-END
+    END;
 GO

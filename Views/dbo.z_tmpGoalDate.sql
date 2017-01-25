@@ -2,33 +2,63 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
+
 CREATE VIEW [dbo].[z_tmpGoalDate]
 AS
-select * from
-(
-select l.LogID,l.TableName,LoggedEvent,EventDt,IdentityID,PreviousText,NewText,'a' src
-,g.GoalID,p.PlanID ,RANK() over(partition by LoggedEvent order by eventDt) seq
-from ChangelogArchive l
-inner join PlanGoal g on l.IdentityID=g.goalid
-inner join EmplPlan p on p.planid=g.PlanID
-where LoggedEvent like 'goal status%Goal%'
+    SELECT  tblAllGoal.LogID ,
+            tblAllGoal.TableName ,
+            tblAllGoal.LoggedEvent ,
+            tblAllGoal.EventDt ,
+            tblAllGoal.IdentityID ,
+            tblAllGoal.PreviousText ,
+            tblAllGoal.NewText ,
+            tblAllGoal.src ,
+            tblAllGoal.GoalID ,
+            tblAllGoal.PlanID ,
+            tblAllGoal.seq
+    FROM    ( SELECT    l.LogID ,
+                        l.TableName ,
+                        l.LoggedEvent ,
+                        l.EventDt ,
+                        l.IdentityID ,
+                        l.PreviousText ,
+                        l.NewText ,
+                        'a' src ,
+                        g.GoalID ,
+                        p.PlanID ,
+                        RANK() OVER ( PARTITION BY l.LoggedEvent ORDER BY l.EventDt ) seq
+              FROM      dbo.ChangelogArchive l
+                        INNER JOIN dbo.PlanGoal g ON l.IdentityID = g.GoalID
+                        INNER JOIN dbo.EmplPlan p ON p.PlanID = g.PlanID
+              WHERE     l.LoggedEvent LIKE 'goal status%Goal%'
 --and NewText='12'
-and TableName ='PlanGoal'
+                        AND l.TableName = 'PlanGoal'
 --order by IdentityID
-union
-select l.LogID,l.TableName,LoggedEvent,EventDt,IdentityID,PreviousText,NewText,'b' src
-,g.GoalID,p.PlanID ,RANK() over(partition by LoggedEvent order by eventDt) seq
-from Changelog l
-inner join PlanGoal g on l.IdentityID=g.goalid
-inner join EmplPlan p on p.planid=g.PlanID
-where LoggedEvent like 'goal status%Goal%'
+              UNION
+              SELECT    l.LogID ,
+                        l.TableName ,
+                        l.LoggedEvent ,
+                        l.EventDt ,
+                        l.IdentityID ,
+                        l.PreviousText ,
+                        l.NewText ,
+                        'b' src ,
+                        g.GoalID ,
+                        p.PlanID ,
+                        RANK() OVER ( PARTITION BY l.LoggedEvent ORDER BY l.EventDt ) seq
+              FROM      dbo.Changelog l
+                        INNER JOIN dbo.PlanGoal g ON l.IdentityID = g.GoalID
+                        INNER JOIN dbo.EmplPlan p ON p.PlanID = g.PlanID
+              WHERE     l.LoggedEvent LIKE 'goal status%Goal%'
 --and NewText='12'
-and TableName ='PlanGoal'
+                        AND l.TableName = 'PlanGoal'
 --order by IdentityID
-) tblAllGoal
-where NewText='12' and seq=1
+            ) tblAllGoal
+    WHERE   tblAllGoal.NewText = '12'
+            AND tblAllGoal.seq = 1;
 --order by IdentityID
 --From PlanGoalTable
+
 
 GO
 EXEC sp_addextendedproperty N'MS_DiagramPane1', N'[0E232FF0-B466-11cf-A24F-00AA00A3EFFF, 1.00]
