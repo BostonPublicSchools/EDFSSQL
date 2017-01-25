@@ -40,7 +40,7 @@ AS
                         LEFT JOIN dbo.Evidence e ON e.EvidenceID = epe.EvidenceID
                         JOIN dbo.CodeLookUp c ( NOLOCK ) ON c.CodeID = epe.EvidenceTypeID
                         LEFT JOIN dbo.RubricIndicator ri ON ri.IndicatorID = epe.ForeignID
-                                                        AND ( c.CodeText = 'Indicator Evidence' )
+                                                            AND ( c.CodeText = 'Indicator Evidence' )
                         LEFT JOIN dbo.RubricIndicator rii ON rii.IndicatorID = ri.IndicatorID
                         LEFT JOIN dbo.RubricStandard rsi ON rsi.StandardID = rii.StandardID
                         LEFT JOIN dbo.Empl em ( NOLOCK ) ON em.EmplID = e.CreatedByID
@@ -79,7 +79,7 @@ AS
 			--LEFT JOIN RubricIndicator ri on ri.IndicatorID = epe.ForeignID and 
 			--LEFT JOIN RubricIndicator rii on rii.IndicatorID = ri.IndicatorID
                         LEFT JOIN dbo.RubricStandard rsi ON rsi.StandardID = epe.ForeignID
-                                                        AND ( c.CodeText = 'Standard Evidence' )
+                                                            AND ( c.CodeText = 'Standard Evidence' )
                         LEFT JOIN dbo.Empl em ( NOLOCK ) ON em.EmplID = e.CreatedByID
                 WHERE   epe.PlanID = @PlanID
                         AND epe.IsDeleted = 0
@@ -90,7 +90,7 @@ AS
                                 AND CodeType = 'EviType' )
                 ORDER BY epe.EvidenceTypeID ,
                         sortOrder ,
-                        e.CreatedByDt ,
+                        CreatedByDt ,
                         EvidenceID;
 			
             END;
@@ -124,7 +124,7 @@ AS
                         LEFT JOIN dbo.Evidence e ON e.EvidenceID = epe.EvidenceID
                         JOIN dbo.CodeLookUp c ( NOLOCK ) ON c.CodeID = epe.EvidenceTypeID
                         LEFT JOIN dbo.RubricStandard rs ON rs.StandardID = epe.ForeignID
-                                                       AND c.CodeText = 'Standard Evidence'
+                                                           AND c.CodeText = 'Standard Evidence'
                         LEFT JOIN dbo.Empl em ( NOLOCK ) ON em.EmplID = e.CreatedByID
                 WHERE   epe.PlanID = @PlanID
                         AND epe.IsDeleted = 0
@@ -137,33 +137,6 @@ AS
                         sortOrder ,
                         em.CreatedByDt ,
                         e.EvidenceID;
-			
-			--UNION
-			
-			--SELECT	epe.PlanEvidenceID, epe.EvidenceID
-			--		,epe.PlanID
-			--		,epe.EvidenceTypeID		
-			--		,c.CodeText as EvidenceType
-			--		,e.Description
-			--		,e.Rationale
-			--		,epe.ForeignID
-			--		,e.[FileName]
-			--		,e.FileExt
-			--		,e.FileSize
-			--		,e.CreatedByID	
-			--		,e.CreatedByDt			
-			--		,ri.IndicatorText as tagText		
-			--		,ri.SortOrder as sortOrder		
-			--FROM EmplPlanEvidence epe
-			--LEFT JOIN Evidence e ON e.EvidenceID = epe.EvidenceID 
-			--JOIN CodeLookUp c (nolock) on c.CodeID = epe.EvidenceTypeID
-			--LEFT JOIN RubricIndicator ri on ri.IndicatorID = epe.ForeignID and c.CodeText = 'Indicator Evidence'
-			--WHERE epe.PlanID = @PlanID
-			--AND epe.IsDeleted = 0 
-			--AND epe.EvidenceTypeID IN (SELECT codeID from CodeLookUp where (CodeText = 'Indicator Evidence')  and CodeType='EviType') 	
-			
-			--SELECT * FROM AllEvidence
-			--ORDER BY EvidenceTypeID, sortOrder, CreatedByDt, EvidenceID
             END;
 	
         IF ( @EvidenceType IS NOT NULL
@@ -195,7 +168,7 @@ AS
                         LEFT JOIN dbo.Evidence e ON e.EvidenceID = epe.EvidenceID
                         JOIN dbo.CodeLookUp c ( NOLOCK ) ON c.CodeID = epe.EvidenceTypeID
                         LEFT JOIN dbo.PlanGoal pg ON pg.GoalID = epe.ForeignID
-                                                 AND c.CodeText = @EvidenceType
+                                                     AND c.CodeText = @EvidenceType
                         LEFT JOIN dbo.CodeLookUp ctp ON ctp.CodeID = pg.GoalTypeID
                         LEFT JOIN dbo.CodeLookUp clv ON clv.CodeID = pg.GoalLevelID
                         LEFT JOIN dbo.Empl em ( NOLOCK ) ON em.EmplID = e.CreatedByID

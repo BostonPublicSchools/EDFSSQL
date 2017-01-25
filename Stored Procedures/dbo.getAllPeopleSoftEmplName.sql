@@ -7,12 +7,18 @@ GO
 -- Create date: <Create Date,,>
 -- Description:	<Description,,>
 -- =============================================
-CREATE PROCEDURE [dbo].[getAllPeopleSoftEmplName]	
+CREATE PROCEDURE [dbo].[getAllPeopleSoftEmplName]
 AS
-BEGIN
+    BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
-	SET NOCOUNT ON;
-   select * from PeopleSoftEmplName 
-END
+        SET NOCOUNT ON;
+        SELECT  EmplID ,
+                EmplName ,
+                LastName ,
+                FirstName ,
+                MiddleName ,
+                ImportDate
+        FROM    dbo.PeopleSoftEmplName; 
+    END;
 GO

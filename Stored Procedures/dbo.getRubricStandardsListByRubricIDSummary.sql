@@ -9,50 +9,96 @@ GO
 -- Description:	Get rubric standards rating by RubricID for Evidence Count
 -- This sp uses other sp: getRubricStandardsByRubricID	, getRubricIndicators
 -- =============================================
-CREATE PROCEDURE [dbo].[getRubricStandardsListByRubricIDSummary]
-	@RubricID as nchar(6)
+CREATE PROCEDURE [dbo].[getRubricStandardsListByRubricIDSummary] @RubricID AS
+    NCHAR(6)
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 
-declare @myTable table(pkID int NOT NULL IDENTITY (1,1), StandardID int,StandardText varchar(60), StandardDesc varchar(max),IsDeleted bit, isActive bit, RubricID int)
-declare @myIndTable table (pkIID int NOT NULL IDENTITY (1,1),IndicatorID int,StandardID int,StandardText varchar(60),RubricID int, ParentIndicatorID int,IndicatorText varchar(max),IndicatorDesc varchar(max),IsDeleted bit ,IsActive bit,SortOrder int)
+        DECLARE @myTable TABLE
+            (
+              pkID INT NOT NULL
+                       IDENTITY(1, 1) ,
+              StandardID INT ,
+              StandardText VARCHAR(60) ,
+              StandardDesc VARCHAR(MAX) ,
+              IsDeleted BIT ,
+              isActive BIT ,
+              RubricID INT
+            );
+        DECLARE @myIndTable TABLE
+            (
+              pkIID INT NOT NULL
+                        IDENTITY(1, 1) ,
+              IndicatorID INT ,
+              StandardID INT ,
+              StandardText VARCHAR(60) ,
+              RubricID INT ,
+              ParentIndicatorID INT ,
+              IndicatorText VARCHAR(MAX) ,
+              IndicatorDesc VARCHAR(MAX) ,
+              IsDeleted BIT ,
+              IsActive BIT ,
+              SortOrder INT
+            );
 
-insert @myTable 
-	exec getRubricStandardsByRubricID @RubricID=@RubricID	
+        INSERT  @myTable
+                EXEC dbo.getRubricStandardsByRubricID @RubricID = @RubricID;	
 
-declare @iCount int, @iStart int
-declare @iStandard int, @vStandard varchar(60)
-declare @query varchar(max)
-select @iCount= COUNT(*) from @myTable
+        DECLARE @iCount INT ,
+            @iStart INT;
+        DECLARE @iStandard INT ,
+            @vStandard VARCHAR(60);
+        DECLARE @query VARCHAR(MAX);
+        SELECT  @iCount = COUNT(*)
+        FROM    @myTable;
 
-set @iStart=1;
+        SET @iStart = 1;
 
-while @iStart<=@iCount
-begin	
-	select @iStandard=StandardID from @myTable where pkID=@iStart  
-	select @vStandard=StandardText  from @myTable where pkID=@iStart
+        WHILE @iStart <= @iCount
+            BEGIN	
+                SELECT  @iStandard = StandardID
+                FROM    @myTable
+                WHERE   pkID = @iStart;  
+                SELECT  @vStandard = StandardText
+                FROM    @myTable
+                WHERE   pkID = @iStart;
 	
-	INSERT @myIndTable(IndicatorID,StandardID) VALUES(0,@iStandard)
+                INSERT  @myIndTable
+                        ( IndicatorID, StandardID )
+                VALUES  ( 0, @iStandard );
 	
-	INSERT @myIndTable exec getRubricIndicators @StandardID=@iStandard 
+                INSERT  @myIndTable
+                        EXEC dbo.getRubricIndicators @StandardID = @iStandard; 
 		
-	set @iStart=@iStart+1	
-end
---select * from @myTable;
---select * from @myIndTable;
+                SET @iStart = @iStart + 1;	
+            END;
 
 --Result 
-	select A.StandardID,B.StandardText,A.IndicatorID,A.IndicatorText, 0 [COUNT],
-	(select case when A.IndicatorID=0 then B.StandardText else '           ' + A.IndicatorText end  )  [StdIndName],
-	(select case when A.IndicatorID=0 then B.StandardText else '' end  )  [StdName],
-	(select case when A.IndicatorID!=0 then IndicatorText else '' end  )  [IndName]
-	from @myIndTable A, @myTable B
-	where A.StandardID=b.StandardID
-	and b.IsDeleted=0
+        SELECT  A.StandardID ,
+                B.StandardText ,
+                A.IndicatorID ,
+                A.IndicatorText ,
+                0 COUNT ,
+                ( SELECT    CASE WHEN A.IndicatorID = 0 THEN B.StandardText
+                                 ELSE '           ' + A.IndicatorText
+                            END
+                ) StdIndName ,
+                ( SELECT    CASE WHEN A.IndicatorID = 0 THEN B.StandardText
+                                 ELSE ''
+                            END
+                ) StdName ,
+                ( SELECT    CASE WHEN A.IndicatorID != 0 THEN A.IndicatorText
+                                 ELSE ''
+                            END
+                ) IndName
+        FROM    @myIndTable A ,
+                @myTable B
+        WHERE   A.StandardID = B.StandardID
+                AND B.IsDeleted = 0;
 	
 				
-END	
+    END;	
 
 
 

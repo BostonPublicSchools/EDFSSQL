@@ -98,7 +98,6 @@ AS
                                 Name
                         FROM    dbo.splitCommentsAll(@comment);
 		
-	--	select * from @returnCommentList
 		--******************************INSERT INTO COMMENT STARTS*****************************************************--
                 DECLARE @iCount INT= 1 ,
                     @NameBoth VARCHAR(MAX) ,
