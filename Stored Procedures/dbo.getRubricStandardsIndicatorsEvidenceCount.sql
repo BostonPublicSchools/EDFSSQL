@@ -7,8 +7,7 @@ GO
 -- Create date: 2/21/2013
 -- Description:	Get rubric standards/Indicator with Total Count of Evidence of the given PlanID
 -- =============================================
-CREATE PROCEDURE [dbo].[getRubricStandardsIndicatorsEvidenceCount] @PlanID AS
-    INT
+CREATE PROCEDURE [dbo].[getRubricStandardsIndicatorsEvidenceCount] @PlanID AS INT
 AS
     BEGIN
         SET NOCOUNT ON;
@@ -51,13 +50,13 @@ AS
         INSERT  @myTable
                 SELECT DISTINCT
                         EvidenceID
-                FROM    dbo.EmplPlanEvidence
+                FROM    dbo.EmplPlanEvidence (NOLOCK)
                 WHERE   PlanID = @PlanID
                         AND IsDeleted = 0;
 	
         DECLARE @iCount INT ,
             @iStart INT;
-        SELECT  @iCount = COUNT(*)
+        SELECT  @iCount = COUNT(pkID)
         FROM    @myTable;
    
         DECLARE @iCountEvi INT ,
@@ -73,26 +72,23 @@ AS
                 SELECT  @iEvidenceID = EvidenceID
                 FROM    @myTable
                 WHERE   pkID = @iStart;	
-	--declare @myTableEvidences table( pkEID int NOT NULL IDENTITY(1,1), EvidenceTypeID int, EvidenceID int,PlanID int, ForeignID int)
 	
                 INSERT  INTO @myTableEvidences --(EvidenceID ,PlanID , ForeignID) 
                         SELECT  ep.EvidenceTypeID ,
                                 ep.EvidenceID ,
                                 ep.PlanID ,
                                 ep.ForeignID
-                        FROM    dbo.EmplPlanEvidence ep
-                                INNER JOIN dbo.Evidence e ON ep.EvidenceID = e.EvidenceID
+                        FROM    dbo.EmplPlanEvidence ep ( NOLOCK )
+                                INNER JOIN dbo.Evidence e ( NOLOCK ) ON ep.EvidenceID = e.EvidenceID
                         WHERE   ep.EvidenceTypeID IN (
                                 SELECT  CodeID
-                                FROM    dbo.CodeLookUp
+                                FROM    dbo.CodeLookUp (NOLOCK)
                                 WHERE   CodeText IN ( 'Standard Evidence',
                                                       'Indicator Evidence' ) )
                                 AND ep.PlanID = @PlanID
                                 AND ep.EvidenceID = @iEvidenceID
                                 AND e.IsDeleted = 0
                                 AND ep.IsDeleted = 0;
-		--select EvidenceTypeID,EvidenceID ,PlanID, ForeignID from EmplPlanEvidence where EvidenceTypeID in(109,265) and
-		--PlanID = @PlanID and IsDeleted=0 and EvidenceID=@iEvidenceID
 			
 	--########START INSERT MISSING STANDARD########--
                 INSERT  INTO @myTableStandard
@@ -103,7 +99,7 @@ AS
                                             ( CASE WHEN A.EvidenceTypeID = ( SELECT
                                                               CodeID
                                                               FROM
-                                                              dbo.CodeLookUp
+                                                              dbo.CodeLookUp (NOLOCK)
                                                               WHERE
                                                               CodeText IN (
                                                               'Standard Evidence' )
@@ -111,14 +107,14 @@ AS
                                                    THEN ( SELECT TOP 1
                                                               StandardID
                                                           FROM
-                                                              dbo.RubricIndicator
+                                                              dbo.RubricIndicator (NOLOCK)
                                                           WHERE
                                                               StandardID = A.ForeignID
                                                         )
                                                    WHEN A.EvidenceTypeID = ( SELECT
                                                               CodeID
                                                               FROM
-                                                              dbo.CodeLookUp
+                                                              dbo.CodeLookUp (NOLOCK)
                                                               WHERE
                                                               CodeText IN (
                                                               'Indicator Evidence' )
@@ -126,20 +122,20 @@ AS
                                                    THEN ( SELECT TOP 1
                                                               StandardID
                                                           FROM
-                                                              dbo.RubricIndicator
+                                                              dbo.RubricIndicator (NOLOCK)
                                                           WHERE
                                                               IndicatorID = A.ForeignID
                                                               AND StandardID IN (
                                                               SELECT
                                                               ForeignID
                                                               FROM
-                                                              dbo.EmplPlanEvidence
+                                                              dbo.EmplPlanEvidence (NOLOCK)
                                                               WHERE
                                                               EvidenceID = @iEvidenceID
                                                               AND EvidenceTypeID = ( SELECT
                                                               CodeID
                                                               FROM
-                                                              dbo.CodeLookUp
+                                                              dbo.CodeLookUp (NOLOCK)
                                                               WHERE
                                                               CodeText IN (
                                                               'Standard Evidence' )
@@ -148,11 +144,11 @@ AS
                                                               GROUP BY ForeignID )
                                                         )
                                               END ) pn
-                                  FROM      dbo.EmplPlanEvidence A
-                                            INNER JOIN dbo.Evidence B ON A.EvidenceID = B.EvidenceID
+                                  FROM      dbo.EmplPlanEvidence A ( NOLOCK )
+                                            INNER JOIN dbo.Evidence B ( NOLOCK ) ON A.EvidenceID = B.EvidenceID
                                   WHERE     A.EvidenceTypeID IN (
                                             SELECT  CodeID
-                                            FROM    dbo.CodeLookUp
+                                            FROM    dbo.CodeLookUp (NOLOCK)
                                             WHERE   CodeText IN (
                                                     'Standard Evidence',
                                                     'Indicator Evidence' ) )
@@ -161,8 +157,8 @@ AS
                                             AND A.IsDeleted = 0
                                             AND B.IsDeleted = 0
                                 ) C
-                                LEFT JOIN dbo.RubricIndicator R ON C.ForeignID = R.IndicatorID
-                                LEFT JOIN dbo.RubricStandard RS ON R.StandardID = RS.StandardID
+                                LEFT JOIN dbo.RubricIndicator R ( NOLOCK ) ON C.ForeignID = R.IndicatorID
+                                LEFT JOIN dbo.RubricStandard RS ( NOLOCK ) ON R.StandardID = RS.StandardID
                         WHERE   C.pn IS NULL
                         GROUP BY R.StandardID ,
                                 RS.StandardText;
@@ -175,7 +171,7 @@ AS
 
 --another loop
         SET @iStartEvi = 1;
-        SELECT  @iCountEvi = COUNT(*)
+        SELECT  @iCountEvi = COUNT(pkEID)
         FROM    @myTableEvidences;
 		
         WHILE @iStartEvi <= @iCountEvi
@@ -187,26 +183,24 @@ AS
                 FROM    @myTableEvidences
                 WHERE   pkEID = @iStartEvi;
                 SELECT  @vEvidType = CodeText
-                FROM    dbo.CodeLookUp
+                FROM    dbo.CodeLookUp (NOLOCK)
                 WHERE   CodeID = @iEvidType;
                 IF ( @vEvidType = 'Standard Evidence' )
                     BEGIN
                         INSERT  INTO @myTableStandard
                                 SELECT  rs.StandardID ,
                                         rs.StandardText
-                                FROM    dbo.RubricStandard AS rs
+                                FROM    dbo.RubricStandard AS rs ( NOLOCK )
                                         LEFT JOIN dbo.RubricHdr AS ri ON rs.RubricID = ri.RubricID
                                 WHERE   rs.StandardID = @iFID;
                     END;
                 ELSE
                     IF ( @vEvidType = 'Indicator Evidence' )
                         BEGIN  --indicator + standard
-			--INSERT into @myTableStandard
-			--SELECT rs.StandardID,rs.StandardText FROM RubricStandard AS rs LEFT JOIN  RubricHdr AS ri ON rs.RubricID = ri.RubricID WHERE rs.StandardID =@iFID			
                             INSERT  @myTableIndicator
                                     EXEC dbo.getRubricIndicatorByIndicatorID @IndicatorID = @iFID;
                             SELECT  @sStandList = StandardID
-                            FROM    dbo.RubricIndicator
+                            FROM    dbo.RubricIndicator (NOLOCK)
                             WHERE   IndicatorID = @iFID;
                         END;	
 			
@@ -214,7 +208,7 @@ AS
             END;
 
         WITH    cteWithCount
-                  AS ( SELECT   COUNT(*) TotalCount ,
+                  AS ( SELECT   COUNT(A.textName) TotalCount ,
                                 A.textName StdIndName
                        FROM     --,StandardID,IndicatorID  from
                                 ( SELECT    StandardText textName
@@ -230,8 +224,5 @@ AS
             FROM    cteWithCount
             ORDER BY cteWithCount.StdIndName;-- StandardID,IndicatorID
 				
-    END;	
-
-
-
+    END;
 GO

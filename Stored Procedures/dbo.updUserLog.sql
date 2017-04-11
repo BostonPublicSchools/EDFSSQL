@@ -2,19 +2,21 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-CREATE PROCEDURE [dbo].[updUserLog] 
-	@LogId int =0 output
-	,@UserID as nchar(6)=null
-	,@UserLogOut bit = 0
+CREATE PROCEDURE [dbo].[updUserLog]
+    @LogId INT = 0 OUTPUT ,
+    @UserID AS NCHAR(6) = NULL ,
+    @UserLogOut BIT = 0
 AS
-BEGIN
+    BEGIN
 
-	SET NOCOUNT ON;
+        SET NOCOUNT ON;
 		
-	UPDATE UserLog set logoutDt = GETDATE(),UserLogOut = @UserLogOut where (logID = @LogId or UserID = @UserID)
-	and UserLogOut = 0  
-	--INSERT INTO UserLog(UserId,BrowserInfo,LoginIssue)
-	--	VALUES (@UserID,@BrowserInfo,@LoginIssue)
-	--sel
-End
+        UPDATE  dbo.UserLog
+        SET     LogoutDt = GETDATE() ,
+                UserLogOut = @UserLogOut
+        WHERE   ( LogId = @LogId
+                  OR UserId = @UserID
+                )
+                AND UserLogOut = 0;  
+    END;
 GO

@@ -9,14 +9,11 @@ GO
 -- =============================================
 CREATE PROCEDURE [dbo].[getLatestRelease]
 AS
-BEGIN
-	select top(1)
-		ReleaseDate
-	from
-		Release
-	where
-		ReleaseType = 'Site'
-	Order by
-		ReleaseDate desc
-END
+    BEGIN
+        SELECT TOP ( 1 )
+                ReleaseDate
+        FROM    dbo.Release
+        WHERE   ReleaseType = 'Site'
+        ORDER BY ReleaseDate DESC;
+    END;
 GO

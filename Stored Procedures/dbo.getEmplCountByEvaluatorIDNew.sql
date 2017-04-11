@@ -3,46 +3,45 @@ GO
 SET ANSI_NULLS ON
 GO
 CREATE PROCEDURE [dbo].[getEmplCountByEvaluatorIDNew]
-	@EvaluatorID AS nchar(6)
-	,@UserRoleID as int
+    @EvaluatorID AS NCHAR(6) ,
+    @UserRoleID AS INT
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 	--declare @EvaluatorID as nchar(6)
 	--declare @UserRoleID as int
 	--set @EvaluatorID = '036008'
 	--set @UserRoleID = 1
 		
-		SELECT distinct
-			COUNT(e.EmplID) as EmplCount
-		FROM Empl AS e (nolock)
-		Join EmplEmplJob as ej (nolock) on e.EmplID = ej.EmplID
-										AND ej.IsActive=1
-		LEFT OUTER JOIN EmplExceptions as emplEx (nolock) on emplEx.EmplJobID = ej.EmplJobID
-		JOIN RubricHdr as rh (nolock) on ej.RubricID = rh.RubricID
-		
-		WHERE 
-			e.EmplActive =1
-		AND  (   ((CASE 
-					WHEN (emplEx.MgrID IS NOT NULL)
-					THEN emplEx.MgrID
-					ELSE ej.MgrID
-				END = @EvaluatorID) AND @UserRoleID = 1  )
-			OR
-			(@EvaluatorID in (select 
-					s.EmplID
-				from 
-					SubevalAssignedEmplEmplJob as ase (nolock) 
-				join SubEval s (nolock) on ase.SubEvalID = s.EvalID 
-				and s.EvalActive = 1
-				where
-					ase.EmplJobID = ej.EmplJobID					
-				and ase.isActive = 1
-				and ase.isDeleted = 0) and @UserRoleID = 2)
-			OR
-			(ej.EmplID = @EvaluatorID and @UserRoleID = 3)
-		)			
+        SELECT DISTINCT
+                COUNT(e.EmplID) AS EmplCount
+        FROM    dbo.Empl AS e ( NOLOCK )
+                JOIN dbo.EmplEmplJob AS ej ( NOLOCK ) ON ej.IsActive = 1
+                                                     AND e.EmplID = ej.EmplID
+                LEFT OUTER JOIN dbo.EmplExceptions AS emplEx ( NOLOCK ) ON emplEx.EmplJobID = ej.EmplJobID
+                JOIN dbo.RubricHdr AS rh ( NOLOCK ) ON ej.RubricID = rh.RubricID
+        WHERE   e.EmplActive = 1
+                AND ( ( ( CASE WHEN ( emplEx.MgrID IS NOT NULL )
+                               THEN emplEx.MgrID
+                               ELSE ej.MgrID
+                          END = @EvaluatorID )
+                        AND @UserRoleID = 1
+                      )
+                      OR ( @EvaluatorID IN (
+                           SELECT   s.EmplID
+                           FROM     dbo.SubevalAssignedEmplEmplJob AS ase ( NOLOCK )
+                                    JOIN dbo.SubEval s ( NOLOCK ) ON s.EvalActive = 1
+                                                              AND ase.SubEvalID = s.EvalID
+                           WHERE    ase.EmplJobID = ej.EmplJobID
+                                    AND ase.IsActive = 1
+                                    AND ase.IsDeleted = 0 )
+                           AND @UserRoleID = 2
+                         )
+                      OR ( ej.EmplID = @EvaluatorID
+                           AND @UserRoleID = 3
+                         )
+                    );			
 
-END
+    END;
 
 GO

@@ -38,10 +38,10 @@ AS
                                                   CAST(gt.GoalTagID AS NVARCHAR)
                                              ELSE cdElementTag.Code
                                         END )
-                            FROM    GoalTag AS gt
-                                    LEFT OUTER JOIN CodeLookUp cdElementTag ON cdElementTag.CodeID = gt.GoalTagID
+                            FROM    dbo.GoalTag AS gt ( NOLOCK )
+                                    LEFT OUTER JOIN dbo.CodeLookUp cdElementTag ( NOLOCK ) ON cdElementTag.CodeID = gt.GoalTagID
                                                               AND cdElementTag.CodeType = 'GoalTag'
-                                    JOIN CodeLookUp cd ON cd.CodeType = 'GoalType'
+                                    JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeType = 'GoalType'
                                                           AND cdElementTag.CodeSubText LIKE ( cd.CodeSubText )
                                                           + CAST(cd.CodeID AS CHAR(250))
                             WHERE   gt.GoalID = g.GoalID
@@ -49,8 +49,8 @@ AS
                             XML PATH('')
                           ), 2, 9999) AS GoalTagIDs ,
                 SUBSTRING(( SELECT  ', ' + CAST(c.CodeText AS VARCHAR(50))
-                            FROM    GoalTag AS gt
-                                    JOIN CodeLookUp AS c ON gt.GoalTagID = c.CodeID
+                            FROM    dbo.GoalTag AS gt ( NOLOCK )
+                                    JOIN dbo.CodeLookUp AS c ON gt.GoalTagID = c.CodeID
                             WHERE   gt.GoalID = g.GoalID
                           FOR
                             XML PATH('')
@@ -64,7 +64,7 @@ AS
                 ( SELECT    ISNULL(e1.NameFirst, '') + ' '
                             + ISNULL(e1.NameMiddle, '') + ' '
                             + ISNULL(e1.NameLast, '')
-                  FROM      Empl e1
+                  FROM      dbo.Empl e1 ( NOLOCK )
                   WHERE     e1.EmplID = CASE WHEN ( emplEx.MgrID IS NOT NULL )
                                              THEN emplEx.MgrID
                                              ELSE ej.MgrID
@@ -80,7 +80,7 @@ AS
                 ( SELECT    ISNULL(e1.NameFirst, '') + ' '
                             + ISNULL(e1.NameMiddle, '') + ' '
                             + ISNULL(e1.NameLast, '')
-                  FROM      Empl e1
+                  FROM      dbo.Empl e1 ( NOLOCK )
                   WHERE     e1.EmplID = CASE WHEN s.EmplID IS NULL
                                              THEN CASE WHEN ( emplEx.MgrID IS NOT NULL )
                                                        THEN emplEx.MgrID
@@ -91,37 +91,35 @@ AS
                 ) AS SubEvalName ,
                 g.CreatedByID ,
                 ce.NameLast + ', ' + ce.NameFirst + ' ' + ISNULL(ce.NameMiddle,
-                                                              '') AS CreatedBy
-		--,oag.CodeText as OveralGoalStatus
-                ,
+                                                              '') AS CreatedBy    ,
                 ( CASE WHEN g.GoalYear = 1 THEN oag.CodeText
                        ELSE oagnyr.CodeText
                   END ) AS OveralGoalStatus ,
                 ( SELECT    COUNT(CodeID)
-                  FROM      CodeLookUp
+                  FROM      dbo.CodeLookUp ( NOLOCK )
                   WHERE     CodeType = 'GoalType'
                             AND CodeSubText = ( SELECT  r.RubricName
-                                                FROM    RubricHdr AS r ( NOLOCK )
-                                                        JOIN EmplJob AS j ( NOLOCK ) ON r.RubricID = j.RubricID
+                                                FROM    dbo.RubricHdr AS r ( NOLOCK )
+                                                        JOIN dbo.EmplJob AS j ( NOLOCK ) ON r.RubricID = j.RubricID
                                                 WHERE   j.JobCode = ej.JobCode
                                               )
                 ) AS TotalGoalTypeCount ,
-                CASE WHEN ( SELECT  COUNT(IsAllGoalTypesIncluded)
+                CASE WHEN ( SELECT  COUNT(b.IsAllGoalTypesIncluded)
                             FROM    ( SELECT DISTINCT
-                                                CASE WHEN TypeTotal < 0
+                                                CASE WHEN a.TypeTotal < 0
                                                      THEN 'FALSE'
                                                      ELSE 'TRUE'
                                                 END IsAllGoalTypesIncluded
                                       FROM      ( SELECT    PlanID ,
                                                             GoalTypeID ,
                                                             COUNT(GoalTypeID) AS TypeTotal
-                                                  FROM      PlanGoal (NOLOCK)
+                                                  FROM      dbo.PlanGoal (NOLOCK)
                                                   WHERE     PlanID = COALESCE(@PlanID,
                                                               PlanID)
                                                             AND NOT GoalStatusID = ( SELECT
                                                               CodeID
                                                               FROM
-                                                              CodeLookUp (NOLOCK)
+                                                              dbo.CodeLookUp (NOLOCK)
                                                               WHERE
                                                               CodeText = 'Not Applicable'
                                                               AND CodeType = 'GoalStatus'
@@ -134,12 +132,12 @@ AS
                                     ) AS b
                           ) = 1
                      THEN ( SELECT  COUNT(CodeID)
-                            FROM    CodeLookUp
+                            FROM    dbo.CodeLookUp ( NOLOCK )
                             WHERE   CodeType = 'GoalType'
                                     AND CodeSubText = ( SELECT
                                                               r.RubricName
-                                                        FROM  RubricHdr AS r ( NOLOCK )
-                                                              JOIN EmplJob AS j ( NOLOCK ) ON r.RubricID = j.RubricID
+                                                        FROM  dbo.RubricHdr AS r ( NOLOCK )
+                                                              JOIN dbo.EmplJob AS j ( NOLOCK ) ON r.RubricID = j.RubricID
                                                         WHERE j.JobCode = ej.JobCode
                                                       )
                           )
@@ -149,32 +147,32 @@ AS
                 oagnyr.CodeText AS MultiYearGoalStatus ,
                 ( gt.CodeText + '  |  ' + gl.CodeText + '  |  ' + g.GoalText ) AS DisplayText ,
                 ( SELECT    COUNT(GoalID)
-                  FROM      GoalActionStep
+                  FROM      dbo.GoalActionStep
                   WHERE     GoalID = g.GoalID
                 ) AS GoalActionStepCount
-        FROM    EmplPlan AS p ( NOLOCK )
-                JOIN PlanGoal AS g ( NOLOCK ) ON p.PlanID = g.PlanID
-                JOIN Empl AS ce ( NOLOCK ) ON g.CreatedByID = ce.EmplID
-                JOIN EmplEmplJob AS ej ( NOLOCK ) ON p.EmplJobID = ej.EmplJobID
-                LEFT JOIN SubevalAssignedEmplEmplJob sub ON sub.IsActive = 1
+        FROM    dbo.EmplPlan AS p ( NOLOCK )
+                JOIN dbo.PlanGoal AS g ( NOLOCK ) ON p.PlanID = g.PlanID
+                JOIN dbo.Empl AS ce ( NOLOCK ) ON g.CreatedByID = ce.EmplID
+                JOIN dbo.EmplEmplJob AS ej ( NOLOCK ) ON p.EmplJobID = ej.EmplJobID
+                LEFT JOIN dbo.SubevalAssignedEmplEmplJob sub ON sub.IsActive = 1
                                                             AND sub.IsDeleted = 0
                                                             AND sub.IsPrimary = 1
                                                             AND ej.EmplJobID = sub.EmplJobID
-                LEFT JOIN SubEval s ( NOLOCK ) ON s.EvalActive = 1
+                LEFT JOIN dbo.SubEval s ( NOLOCK ) ON s.EvalActive = 1
                                                   AND sub.SubEvalID = s.EvalID
-                JOIN Empl AS e ( NOLOCK ) ON ej.EmplID = e.EmplID
-                LEFT OUTER JOIN Empl AS me ( NOLOCK ) ON ej.MgrID = me.EmplID
-                JOIN CodeLookUp AS gt ( NOLOCK ) ON g.GoalTypeID = gt.CodeID
-                JOIN CodeLookUp AS gl ( NOLOCK ) ON g.GoalLevelID = gl.CodeID
-                JOIN CodeLookUp AS gs ( NOLOCK ) ON g.GoalStatusID = gs.CodeID
-                LEFT OUTER JOIN GoalEvaluationProgress AS gep ( NOLOCK ) ON gep.EvalId = COALESCE(@EvalID,
+                JOIN dbo.Empl AS e ( NOLOCK ) ON ej.EmplID = e.EmplID
+                LEFT OUTER JOIN dbo.Empl AS me ( NOLOCK ) ON ej.MgrID = me.EmplID
+                JOIN dbo.CodeLookUp AS gt ( NOLOCK ) ON g.GoalTypeID = gt.CodeID
+                JOIN dbo.CodeLookUp AS gl ( NOLOCK ) ON g.GoalLevelID = gl.CodeID
+                JOIN dbo.CodeLookUp AS gs ( NOLOCK ) ON g.GoalStatusID = gs.CodeID
+                LEFT OUTER JOIN dbo.GoalEvaluationProgress AS gep ( NOLOCK ) ON gep.EvalId = COALESCE(@EvalID,
                                                               gep.EvalId)
                                                               AND g.GoalID = gep.GoalID
-                LEFT OUTER JOIN CodeLookUp AS gp ( NOLOCK ) ON gep.ProgressCodeID = gp.CodeID
-                LEFT OUTER JOIN CodeLookUp AS oag ( NOLOCK ) ON p.GoalStatusID = oag.CodeID
-                LEFT OUTER JOIN CodeLookUp AS oagnyr ( NOLOCK ) ON p.MultiYearGoalStatusID = oagnyr.CodeID
-                LEFT OUTER JOIN Evaluation AS ev ( NOLOCK ) ON gep.EvalId = ev.EvalID
-                LEFT OUTER JOIN EmplExceptions AS emplEx ( NOLOCK ) ON emplEx.EmplJobID = ej.EmplJobID
+                LEFT OUTER JOIN dbo.CodeLookUp AS gp ( NOLOCK ) ON gep.ProgressCodeID = gp.CodeID
+                LEFT OUTER JOIN dbo.CodeLookUp AS oag ( NOLOCK ) ON p.GoalStatusID = oag.CodeID
+                LEFT OUTER JOIN dbo.CodeLookUp AS oagnyr ( NOLOCK ) ON p.MultiYearGoalStatusID = oagnyr.CodeID
+                LEFT OUTER JOIN dbo.Evaluation AS ev ( NOLOCK ) ON gep.EvalId = ev.EvalID
+                LEFT OUTER JOIN dbo.EmplExceptions AS emplEx ( NOLOCK ) ON emplEx.EmplJobID = ej.EmplJobID
         WHERE   p.PlanID = COALESCE(@PlanID, p.PlanID)
         ORDER BY g.CreatedByDt;		
     END;
