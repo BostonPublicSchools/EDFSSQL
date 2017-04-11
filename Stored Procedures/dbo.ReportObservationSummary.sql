@@ -36,7 +36,7 @@ AS
                 FormAsmtEvalDt [Formative],
                 StdRateBelow [below proficient],
                 FollowUpDt [follow-up obs Date]
-        FROM    dbo.ObservationAnalyst
+        FROM    dbo.ObservationAnalyst ( NOLOCK)
         WHERE   ( MgrID = @ncUserId
                   AND @UserRoleID = 1
                 )
