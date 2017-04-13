@@ -8,22 +8,22 @@ GO
 -- Description:	get all the comments for an evidence
 -- =============================================
 CREATE PROCEDURE [dbo].[getEvidenceComments]
-		@EvidenceID AS int,
-		@UserID as nvarchar(6)
-		--,@CommentsCount as int= 0 OUTPUT
-AS		
-BEGIN
-	SET NOCOUNT ON;
-	
-	
-	--SELECT  COUNT(*) 
-	SELECT COUNT(c.CommentID) as EviCommentCount, COUNT(cwh.CommentsViewID) as 	UnreadEviCommentCount	
-	from Comment c    
-	Left outer join CommentsViewHistory cwh on cwh.CommentID = c.CommentID and cwh.AssignedEmplID = @UserID and cwh.IsViewed = 0
-	join Evidence evi on evi.EvidenceID = c.OtherID 
-	join CodeLookUp cd on cd.CodeID = c.CommentTypeID and cd.CodeType='ComType' and CodeText='Evidence Comment'
-	WHERE c.OtherID = @EvidenceID and c.IsDeleted = 0
-	
-	
-END	
+    @EvidenceID AS INT ,
+    @UserID AS NVARCHAR(6)
+AS
+    BEGIN
+        SET NOCOUNT ON;
+        SELECT  COUNT(c.CommentID) AS EviCommentCount ,
+                COUNT(cwh.CommentsViewID) AS UnreadEviCommentCount
+        FROM    dbo.Comment c ( NOLOCK )
+                LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.AssignedEmplID = @UserID
+                                                           AND cwh.IsViewed = 0
+														   AND cwh.CommentID = c.CommentID
+                JOIN dbo.Evidence evi ( NOLOCK ) ON evi.EvidenceID = c.OtherID
+                JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeType = 'ComType'
+                                      AND cd.CodeText = 'Evidence Comment'
+									  AND cd.CodeID = c.CommentTypeID
+        WHERE   c.OtherID = @EvidenceID
+                AND c.IsDeleted = 0;
+	END;	
 GO

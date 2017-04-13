@@ -3,6 +3,7 @@ GO
 SET ANSI_NULLS ON
 GO
 
+
 -- =============================================
 -- Author:		Avery, Bryce
 -- Create date: 11/06/2012
@@ -272,9 +273,10 @@ AS
                                 EvaluatorSignedDt
                       ) AS ev ON p.PlanID = ev.PlanID
             LEFT JOIN ( SELECT  EvalID ,
-                                COUNT(*) AS RxCnt
+                                COUNT(PrescriptionId) AS RxCnt
                         FROM    dbo.EvaluationPrescription (NOLOCK)
                         GROUP BY EvalID
                       ) AS ep ON ev.EvalID = ep.EvalID
     WHERE   ej.IsActive = 1;	
+
 GO

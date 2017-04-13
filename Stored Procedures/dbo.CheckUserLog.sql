@@ -10,29 +10,31 @@ GO
 -- Description:	This checks if user is still logged in
 --  Returns 1 when true else null
 -- =============================================
-CREATE PROCEDURE [dbo].[CheckUserLog] 	
-	@UserID AS nchar(6) 	
-	,@IsLogged AS int = null OUTPUT
-	
+CREATE PROCEDURE [dbo].[CheckUserLog]
+    @UserID AS NCHAR(6) ,
+    @IsLogged AS INT = NULL OUTPUT
 AS
-BEGIN
+    BEGIN
 
-	SET NOCOUNT ON;
+        SET NOCOUNT ON;
 		
-	if exists(
-		select top 1 * from UserLog
-		where UserId=@UserID 
-		and logid= (select MAX(logid) from UserLog where UserId=@UserID)	
-		and UserLogOut=0
-		and LoginIssue ='Login Successful'
-		and  DATEDIFF(MINUTE,CreatedDt,GETDATE())<10
-		)
-	Begin
-		Set @IsLogged=1;
-	End
-print @IsLogged
+        IF EXISTS ( SELECT TOP 1
+                            LogId
+                    FROM    dbo.UserLog ( NOLOCK )
+                    WHERE   UserId = @UserID
+                            AND LogId = ( SELECT    MAX(LogId)
+                                          FROM      dbo.UserLog ( NOLOCK )
+                                          WHERE     UserId = @UserID
+                                        )
+                            AND UserLogOut = 0
+                            AND LoginIssue = 'Login Successful'
+                            AND DATEDIFF(MINUTE, CreatedDt, GETDATE()) < 10 )
+            BEGIN
+                SET @IsLogged = 1;
+            END;
+        PRINT @IsLogged;
 
-END
+    END;
 
 
 GO

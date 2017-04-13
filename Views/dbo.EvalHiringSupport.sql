@@ -8,6 +8,7 @@ GO
 
 
 
+
 /* =============================================
  Author:		Newa,Matina
  Create date:   04/9/2013
@@ -37,8 +38,8 @@ AS
 		--,'' [Primary program area] --ppc.ProgramArea
             ,
             SUBSTRING(( SELECT  '; ' + CAST(( c.CodeText ) AS VARCHAR) --[program area]
-                        FROM    dbo.PositionProgram pp
-                                INNER JOIN dbo.CodeLookUp c ON pp.ProgramCodeID = c.CodeID
+                        FROM    dbo.PositionProgram pp ( NOLOCK )
+                                INNER JOIN dbo.CodeLookUp c ( NOLOCK ) ON pp.ProgramCodeID = c.CodeID
                         WHERE   c.CodeType = 'ProgTitle'
                                 AND pp.IsPrimary = 1
                                 AND pp.EmplID = ecl.EmplID
@@ -46,10 +47,10 @@ AS
                         XML PATH('')
                       ), 2, 9999) [Primary program area] ,
             ecl.PlanType + ' -  '
-            + ( ( CASE WHEN CAST(YEAR(DATEADD(DAY, ecl.PlanDuration, 0)) - 1900 AS VARCHAR) = '0'
-                       THEN ''
-                       ELSE CAST(YEAR(DATEADD(DAY, ecl.PlanDuration, 0)) - 1900 AS VARCHAR)
-                            + ' Year(s) '
+            + ( ( CASE WHEN CAST(YEAR(DATEADD(DAY, ecl.PlanDuration, 0))
+                            - 1900 AS VARCHAR) = '0' THEN ''
+                       ELSE CAST(YEAR(DATEADD(DAY, ecl.PlanDuration, 0))
+                            - 1900 AS VARCHAR) + ' Year(s) '
                   END )
                 + ( CASE WHEN CAST(MONTH(DATEADD(DAY, ecl.PlanDuration, 0)) AS VARCHAR) = '0'
                          THEN ''
@@ -81,10 +82,10 @@ AS
                    ELSE 'No'
               END ) [On leave] ,
             '' [Network Superintendent]
-    FROM    dbo.EvaluatorCaseLoad ecl
+    FROM    dbo.EvaluatorCaseLoad ecl ( NOLOCK )
             INNER JOIN cte ON ecl.EmplID = cte.EmplId
-            LEFT JOIN dbo.EmplPlan AS p ( NOLOCK ) ON cte.EmplJobId = p.EmplJobID
-                                                  AND p.PlanActive = 1
+            LEFT JOIN dbo.EmplPlan AS p ( NOLOCK ) ON p.PlanActive = 1
+                                                      AND cte.EmplJobId = p.EmplJobID
             LEFT JOIN dbo.CodeLookUp AS gs ( NOLOCK ) ON p.GoalStatusID = gs.CodeID
             LEFT JOIN ( SELECT  PlanID ,
                                 MAX(EvalID) AS EvalID
@@ -98,14 +99,4 @@ AS
                         FROM    dbo.Evaluation AS ev ( NOLOCK )
                                 JOIN dbo.CodeLookUp AS c ( NOLOCK ) ON ev.EvalTypeID = c.CodeID
                       ) AS ed ON ev.EvalID = ed.EvalID; 
-		--LEFT JOIN ( SELECT pp.EmplID, ( RTRIM(c.code) + ':    ' +c.CodeText) [ProgramArea] 
-		--			from  PositionProgram pp INNER JOIN CodeLookUp c on pp.ProgramCodeID =c.CodeID 
-		--			where c.CodeType='ProgTitle'
-		--		  ) AS ppc ON ppc.EmplID=ecl.EmplID
-		 
-
-
-
-
-
 GO

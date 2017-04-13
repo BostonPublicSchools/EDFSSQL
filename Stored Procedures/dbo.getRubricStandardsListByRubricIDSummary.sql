@@ -50,7 +50,7 @@ AS
         DECLARE @iStandard INT ,
             @vStandard VARCHAR(60);
         DECLARE @query VARCHAR(MAX);
-        SELECT  @iCount = COUNT(*)
+        SELECT  @iCount = COUNT(pkID)
         FROM    @myTable;
 
         SET @iStart = 1;
@@ -96,10 +96,5 @@ AS
                 @myTable B
         WHERE   A.StandardID = B.StandardID
                 AND B.IsDeleted = 0;
-	
-				
-    END;	
-
-
-
+    END;
 GO

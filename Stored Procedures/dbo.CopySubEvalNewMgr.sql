@@ -40,7 +40,7 @@ AS
                         Is5StepProcess ,
                         IsNon5StepProcess ,
                         IsEvalManager
-                FROM    dbo.SubEval
+                FROM    dbo.SubEval ( NOLOCK )
                 WHERE   MgrID = @OldManagerId
                         AND EvalActive = 1
                         AND EmplID != @ManagerId;
@@ -49,7 +49,7 @@ AS
         DECLARE @counter INT;
         DECLARE @productKey VARCHAR(20);
 
-        SET @counter = ( SELECT COUNT(*)
+        SET @counter = ( SELECT COUNT(rsEmplID)  
                          FROM   @ResultSet
                        );
 
@@ -66,18 +66,8 @@ AS
                                 FROM    @ResultSet
                               );
 	
-                IF NOT EXISTS ( SELECT  EvalID ,
-                                        MgrID ,
-                                        EmplID ,
-                                        EvalActive ,
-                                        CreatedByID ,
-                                        CreatedByDt ,
-                                        LastUpdatedByID ,
-                                        LastUpdatedDt ,
-                                        Is5StepProcess ,
-                                        IsNon5StepProcess ,
-                                        IsEvalManager
-                                FROM    dbo.SubEval
+                IF NOT EXISTS ( SELECT  EvalID 
+                                FROM    dbo.SubEval ( NOLOCK )
                                 WHERE   MgrID = @ManagerId
                                         AND EmplID = @EmplID
                                         AND EvalActive = 1 )
@@ -112,14 +102,14 @@ AS
 	---update the subeval of all the emplJobs of the dept with new manager relations.
                         UPDATE  sej
                         SET     sej.SubEvalID = @newEvalID
-                        FROM    dbo.SubevalAssignedEmplEmplJob sej
+                        FROM    dbo.SubevalAssignedEmplEmplJob sej ( NOLOCK )
                         WHERE   sej.EmplJobID IN ( SELECT   EmplJobID
-                                                   FROM     dbo.EmplEmplJob
+                                                   FROM     dbo.EmplEmplJob ( NOLOCK )
                                                    WHERE    DeptID = @DeptID
                                                             AND IsActive = 1 )
                                 AND sej.SubEvalID IN (
                                 SELECT  EvalID
-                                FROM    dbo.SubEval
+                                FROM    dbo.SubEval ( NOLOCK )
                                 WHERE   EvalActive = 1
                                         AND MgrID = @OldManagerId
                                         AND EmplID = @EmplID )

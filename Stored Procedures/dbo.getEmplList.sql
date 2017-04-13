@@ -10,7 +10,6 @@ GO
 CREATE PROCEDURE [dbo].[getEmplList]
     @ncUserId AS NCHAR(6) = NULL ,
     @UserRoleID AS INT
-	--,@IsNonLic as bit = 0 	
 AS
     BEGIN
         SET NOCOUNT ON;
@@ -23,15 +22,14 @@ AS
                                 ej.EmplID
                        FROM     dbo.EmplEmplJob AS ej ( NOLOCK )
                                 JOIN dbo.EmplJob AS j ( NOLOCK ) ON ej.JobCode = j.JobCode
-                                JOIN dbo.EmplPlan AS p ( NOLOCK ) ON ej.EmplJobID = p.EmplJobID
+                                JOIN dbo.EmplPlan AS p ( NOLOCK ) ON p.PlanActive = 1
+                                                              AND ej.EmplJobID = p.EmplJobID
                                 JOIN dbo.RubricHdr AS r ( NOLOCK ) ON r.RubricID = ( CASE
                                                               WHEN p.RubricID IS NOT NULL
                                                               THEN p.RubricID
                                                               ELSE ej.RubricID
                                                               END )
                        WHERE    ej.IsActive = 1
-                                AND p.PlanActive = 1
-		--AND r.Is5StepProcess = @IsNonLic	
                      )
             SELECT DISTINCT
                     e.EmplID ,
@@ -116,44 +114,44 @@ AS
                     ISNULL(pc.CodeText, 'None') AS GoalStatus ,
                     ISNULL(ac.CodeText, 'None') AS ActionStepStatus ,
                     ( SELECT    COUNT(PlanID)
-                      FROM      dbo.PlanGoal
+                      FROM      dbo.PlanGoal (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND GoalYear = 1
                                 AND IsDeleted = 0
                     ) AS GoalCount ,
                     ( SELECT    COUNT(PlanID)
-                      FROM      dbo.ObservationHeader
+                      FROM      dbo.ObservationHeader (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                     ) AS ObservationCount ,
                     ( SELECT    COUNT(PlanID)
-                      FROM      dbo.ObservationHeader
+                      FROM      dbo.ObservationHeader (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                                 AND CreatedByID = @ncUserId
                                 AND ObsvRelease = 0
                     ) AS ObservationUnReleasedCountByEval ,
                     ( SELECT    COUNT(PlanID)
-                      FROM      dbo.ObservationHeader
+                      FROM      dbo.ObservationHeader (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                                 AND ObsvRelease = 0
                     ) AS ObservationUnReleasedTotalCount ,
-                    ( SELECT    COUNT(*)
-                      FROM      dbo.ObservationHeader
+                    ( SELECT    COUNT(PlanID)
+                      FROM      dbo.ObservationHeader (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                                 AND CreatedByID = @ncUserId
                                 AND ObsvRelease = 1
                     ) AS ObservationReleasedCountByEval ,
-                    ( SELECT    COUNT(*)
-                      FROM      dbo.ObservationHeader
+                    ( SELECT    COUNT(PlanID)
+                      FROM      dbo.ObservationHeader (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                                 AND ObsvRelease = 1
                     ) AS ObservationReleasedTotalCount ,
-                    ( SELECT    COUNT(*)
-                      FROM      dbo.EmplPlanEvidence
+                    ( SELECT    COUNT(PlanID)
+                      FROM      dbo.EmplPlanEvidence (NOLOCK)
                       WHERE     PlanID = p.PlanID
                                 AND IsDeleted = 0
                     ) AS ArtifactCount ,
@@ -162,9 +160,9 @@ AS
                                 eval.EvaluatorSignedDt
                       FROM      dbo.Evaluation AS eval ( NOLOCK )
                                 JOIN dbo.EmplPlan AS p ( NOLOCK ) ON eval.PlanID = p.PlanID
-                                JOIN dbo.EmplEmplJob AS sej ( NOLOCK ) ON p.EmplJobID = sej.EmplJobID
-                      WHERE     sej.EmplID = ej.EmplID
-                                AND eval.IsDeleted = 0
+                                JOIN dbo.EmplEmplJob AS sej ( NOLOCK ) ON sej.EmplID = ej.EmplID
+                                                              AND p.EmplJobID = sej.EmplJobID
+                      WHERE     eval.IsDeleted = 0
                       ORDER BY  eval.EvalDt DESC
                     ) AS EvaluatorSignedDt ,
                     ( SELECT TOP 1
@@ -172,9 +170,9 @@ AS
                       FROM      dbo.Evaluation AS Eval ( NOLOCK )
                                 JOIN dbo.EmplPlan AS p ( NOLOCK ) ON Eval.PlanID = p.PlanID
                                                               AND p.PlanActive = 1
-                                JOIN dbo.EmplEmplJob AS sej ( NOLOCK ) ON p.EmplJobID = sej.EmplJobID
-                      WHERE     sej.EmplID = ej.EmplID
-                                AND Eval.IsDeleted = 0
+                                JOIN dbo.EmplEmplJob AS sej ( NOLOCK ) ON sej.EmplID = ej.EmplID
+                                                              AND p.EmplJobID = sej.EmplJobID
+                      WHERE     Eval.IsDeleted = 0
                                 AND Eval.EvalTypeID IN ( 83, 84 )
                                 AND Eval.EvaluatorSignedDt IS NOT NULL
                       ORDER BY  Eval.EvaluatorSignedDt DESC
@@ -182,11 +180,11 @@ AS
                     ( SELECT TOP 1
                                 Eval.EvaluatorSignedDt
                       FROM      dbo.Evaluation AS Eval ( NOLOCK )
-                                JOIN dbo.EmplPlan AS p ( NOLOCK ) ON Eval.PlanID = p.PlanID
-                                                              AND p.PlanActive = 1
+                                JOIN dbo.EmplPlan AS p ( NOLOCK ) ON p.PlanActive = 1
+                                                              AND Eval.PlanID = p.PlanID
                                 JOIN dbo.EmplEmplJob AS sej ( NOLOCK ) ON p.EmplJobID = sej.EmplJobID
-                      WHERE     sej.EmplID = ej.EmplID
-                                AND Eval.IsDeleted = 0
+                                                              AND sej.EmplID = ej.EmplID
+                      WHERE     Eval.IsDeleted = 0
                                 AND Eval.EvalTypeID = 85
                                 AND Eval.EvaluatorSignedDt IS NOT NULL
                       ORDER BY  Eval.EvaluatorSignedDt DESC
@@ -198,12 +196,7 @@ AS
                     ( CASE WHEN ( emplEx.MgrID IS NOT NULL ) THEN 1
                            ELSE 0
                       END ) AS EmplExceptionExists ,
-                    rh.Is5StepProcess AS Is5StepProcess
-		--,case when ISNULL(p.PlanActive, 0) = 1 
-		--	then ISNULL(rh.Is5StepProcess, 0)
-		--	else ISNULL(ejrh.Is5StepProcess, 0)
-		--	end Is5StepProcess
-                    ,
+                    rh.Is5StepProcess AS Is5StepProcess ,
                     rh.IsDESELic ,
                     ( CASE WHEN @UserRoleID = 1
                                 AND @ncUserId = dbo.funcGetPrimaryManagerByEmplID(e.EmplID)
@@ -225,11 +218,11 @@ AS
                            ELSE 0
                       END ) IsPrimaryEvaluator ,
                     ISNULL(pcmulti.CodeText, 'None') AS MultiGoalStatus ,
-                    ( SELECT    COUNT(*)
+                    ( SELECT    COUNT(PlanID)
                       FROM      dbo.PlanGoal (NOLOCK)
-                      WHERE     PlanID = p.PlanID
-                                AND GoalYear = 2
+                      WHERE     GoalYear = 2
                                 AND IsDeleted = 0
+                                AND PlanID = p.PlanID
                     ) AS SecondYearGoalCount ,
                     ISNULL(acmulti.CodeText, 'None') AS MultiActionStepStatus
             FROM    dbo.Empl AS e ( NOLOCK )
@@ -251,8 +244,7 @@ AS
                                                               WHEN p.RubricID IS NULL
                                                               THEN ej.RubricID
                                                               ELSE p.RubricID
-                                                              END )									
-	--left join RubricHdr as rh (nolock) on rh.RubricID = p.RubricID
+                                                              END )
                     LEFT OUTER JOIN dbo.CodeLookUp AS pc ( NOLOCK ) ON p.GoalStatusID = pc.CodeID
                     LEFT OUTER JOIN dbo.CodeLookUp AS ac ( NOLOCK ) ON p.ActnStepStatusID = ac.CodeID
                     LEFT OUTER JOIN dbo.CodeLookUp AS pcmulti ( NOLOCK ) ON p.MultiYearGoalStatusID = pcmulti.CodeID
@@ -282,6 +274,4 @@ AS
                     e.NameLast ,
                     e.NameFirst;
     END;
-
-
 GO

@@ -7,42 +7,76 @@ GO
 -- Create date: 2/21/2013
 -- Description:	Get rubric standards rating by JobCode
 -- =============================================
-CREATE PROCEDURE [dbo].[getRubricStandardsIndicatorListByJobCode]
-	@JobCode as nchar(6)
+CREATE PROCEDURE [dbo].[getRubricStandardsIndicatorListByJobCode] @JobCode AS
+    NCHAR(6)
 AS
-BEGIN
-	SET NOCOUNT ON;
+    BEGIN
+        SET NOCOUNT ON;
 
+        DECLARE @myTable TABLE
+            (
+              pkID INT NOT NULL
+                       IDENTITY(1, 1) ,
+              StandardID INT ,
+              StandardText VARCHAR(60) ,
+              JobCode VARCHAR(60) ,
+              StandardDesc VARCHAR(MAX) ,
+              RubricID INT ,
+              RubricName VARCHAR(60)
+            );
+        DECLARE @myIndTable TABLE
+            (
+              pkIID INT NOT NULL
+                        IDENTITY(1, 1) ,
+              IndicatorID INT ,
+              StandardID INT ,
+              ParentIndicatorID INT ,
+              IndicatorText VARCHAR(MAX) ,
+              IndicatorDesc VARCHAR(MAX) ,
+              IsDeleted BIT ,
+              IsActive BIT ,
+              SortOrder INT
+            );
 
-declare @myTable table(pkID int NOT NULL IDENTITY (1,1), StandardID int,StandardText varchar(60),JobCode varchar(60),StandardDesc varchar(max),RubricID int,RubricName varchar(60))
-declare @myIndTable table (pkIID int NOT NULL IDENTITY (1,1),IndicatorID int,StandardID int,ParentIndicatorID int,IndicatorText varchar(max),IndicatorDesc varchar(max),IsDeleted bit ,IsActive bit,SortOrder int
-						  )
+        INSERT  @myTable
+                EXEC dbo.getRubricStandardsListByJobCode @JobCode = @JobCode;
 
-insert @myTable 
-	exec getRubricStandardsListByJobCode @JobCode=@JobCode
+        DECLARE @iCount INT ,
+            @iStart INT;
+        DECLARE @iStandard INT ,
+            @vStandard VARCHAR(60);
+        DECLARE @query VARCHAR(MAX);
+        SELECT  @iCount = COUNT(pkID)
+        FROM    @myTable;
 
-declare @iCount int, @iStart int
-declare @iStandard int, @vStandard varchar(60)
-declare @query varchar(max)
-select @iCount= COUNT(*) from @myTable
+        SET @iStart = 1;
 
-set @iStart=1;
+        WHILE @iStart <= @iCount
+            BEGIN
+                SELECT  @iStandard = StandardID
+                FROM    @myTable
+                WHERE   pkID = @iStart;
+                SELECT  @vStandard = StandardText
+                FROM    @myTable
+                WHERE   pkID = @iStart;
+                INSERT  @myIndTable
+                        ( IndicatorID, StandardID )
+                VALUES  ( 0, @iStandard );
+                INSERT  @myIndTable
+                        EXEC dbo.getRubricIndicators @StandardID = @iStandard; 
+                SET @iStart = @iStart + 1;	
+            END;
 
-while @iStart<=@iCount
-begin
-	select @iStandard=StandardID from @myTable where pkID=@iStart
-	select @vStandard=StandardText  from @myTable where pkID=@iStart
-	INSERT @myIndTable(IndicatorID,StandardID) VALUES(0,@iStandard)
-	insert @myIndTable exec getRubricIndicators @StandardID=@iStandard 
-	set @iStart=@iStart+1	
-end
-
-	select A.StandardID,StandardText,A.IndicatorID,A.IndicatorText, 0 [COUNT] from @myIndTable A, @myTable B
-	where A.StandardID=b.StandardID
-	order by A.StandardID,A.IndicatorID,A.SortOrder
-	
-				
-END	
-
--- exec [getRubricStandardsIndicatorListByJobCode] @JobCode='S20315'
+        SELECT  A.StandardID ,
+                B.StandardText ,
+                A.IndicatorID ,
+                A.IndicatorText ,
+                0 COUNT
+        FROM    @myIndTable A ,
+                @myTable B
+        WHERE   A.StandardID = B.StandardID
+        ORDER BY A.StandardID ,
+                A.IndicatorID ,
+                A.SortOrder;
+    END;
 GO

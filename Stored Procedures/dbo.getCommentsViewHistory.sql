@@ -20,17 +20,16 @@ AS
                 SELECT  COUNT(c.CommentID) AS TotalCommentCount ,
                         COUNT(cwh.CommentsViewID) AS UnReadCommentCount
                 FROM    dbo.Comment c ( NOLOCK )
-                        LEFT OUTER JOIN dbo.CommentsViewHistory cwh  ( NOLOCK ) ON cwh.CommentID = c.CommentID
-                                                              AND cwh.AssignedEmplID = @UserID
+                        LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.AssignedEmplID = @UserID
                                                               AND cwh.IsViewed = 0
-                        JOIN dbo.Evidence evi  ( NOLOCK ) ON evi.EvidenceID = c.OtherID
-                        JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeID = c.CommentTypeID
-                                              AND cd.CodeType = 'ComType'
-                                              AND cd.CodeText = 'Evidence Comment'
+															  AND cwh.CommentID = c.CommentID
+                        JOIN dbo.Evidence evi ( NOLOCK ) ON evi.EvidenceID = c.OtherID
+                        JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeType = 'ComType'
+                                                             AND cd.CodeText = 'Evidence Comment'
+															 AND cd.CodeID = c.CommentTypeID
                 WHERE   c.OtherID = @OtherID
                         AND c.IsDeleted = 0;
             END;
-	
 	
         ELSE
             IF ( @OtherIDCommentType = 'Goals' )
@@ -38,13 +37,13 @@ AS
                     SELECT  COUNT(c.CommentID) AS TotalCommentCount ,
                             COUNT(cwh.CommentsViewID) AS UnReadCommentCount
                     FROM    dbo.Comment c ( NOLOCK )
-                            LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.CommentID = c.CommentID
-                                                              AND cwh.AssignedEmplID = @UserID
+                            LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.AssignedEmplID = @UserID
                                                               AND cwh.IsViewed = 0
+															  AND cwh.CommentID = c.CommentID
                             JOIN dbo.PlanGoal pg ( NOLOCK ) ON pg.GoalID = c.OtherID
-                            JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeID = c.CommentTypeID
-                                                  AND cd.CodeType = 'ComType'
-                                                  AND cd.CodeText = 'Goal'
+                            JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeType = 'ComType'
+                                                              AND cd.CodeText = 'Goal'
+															  AND cd.CodeID = c.CommentTypeID
                     WHERE   c.OtherID = @OtherID
                             AND c.IsDeleted = 0;
                 END;
@@ -55,16 +54,15 @@ AS
                         SELECT  COUNT(c.CommentID) AS TotalCommentCount ,
                                 COUNT(cwh.CommentsViewID) AS UnReadCommentCount
                         FROM    dbo.Comment c ( NOLOCK )
-                                LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.CommentID = c.CommentID
-                                                              AND cwh.AssignedEmplID = @UserID
+                                LEFT OUTER JOIN dbo.CommentsViewHistory cwh ( NOLOCK ) ON cwh.AssignedEmplID = @UserID
                                                               AND cwh.IsViewed = 0
+															  AND cwh.CommentID = c.CommentID
                                 JOIN dbo.GoalActionStep gc ( NOLOCK ) ON gc.ActionStepID = c.OtherID
-                                JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeID = c.CommentTypeID
-                                                      AND cd.CodeType = 'ComType'
-                                                      AND cd.CodeText = 'ActionSteps'
+                                JOIN dbo.CodeLookUp cd ( NOLOCK ) ON cd.CodeType = 'ComType'
+                                                              AND cd.CodeText = 'ActionSteps'
+															  AND cd.CodeID = c.CommentTypeID
                         WHERE   c.OtherID = @OtherID
                                 AND c.IsDeleted = 0;
                     END;
-	
-    END;	
+    END;
 GO
