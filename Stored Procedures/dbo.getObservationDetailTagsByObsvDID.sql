@@ -7,23 +7,21 @@ GO
 -- Create date: 09/14/2012
 -- Description:	Get  ObservationDetail Tags by ObservationDetailID
 -- =============================================
-CREATE PROCEDURE [dbo].[getObservationDetailTagsByObsvDID]
-@ObsvDID int
-	
-	
+CREATE PROCEDURE [dbo].[getObservationDetailTagsByObsvDID] @ObsvDID INT
 AS
-BEGIN
-	SET NOCOUNT ON;
-	DECLARE @ObsvDID1 int
+    BEGIN
+        SET NOCOUNT ON;
+        DECLARE @ObsvDID1 INT;
 	
 	
-	SET @ObsvDID1 = @ObsvDID
+        SET @ObsvDID1 = @ObsvDID;
 	
 	
-	SELECT IndicatorID 
-	from dbo.ObservationDetailRubricIndicator
-	where isdeleted = 0 and ObsvDID = @ObsvDID1
-END
+        SELECT  IndicatorID
+        FROM    dbo.ObservationDetailRubricIndicator ( NOLOCK )
+        WHERE   IsDeleted = 0
+                AND ObsvDID = @ObsvDID1;
+    END;
 
 
 GO

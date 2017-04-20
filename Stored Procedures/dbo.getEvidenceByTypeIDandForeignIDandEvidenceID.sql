@@ -8,38 +8,39 @@ GO
 -- Description:	Get  Evidence List by EvidenceTypeID and ForeignID and EvidenceID
 -- =============================================
 CREATE PROCEDURE [dbo].[getEvidenceByTypeIDandForeignIDandEvidenceID]
-	@EvidenceTypeID AS int
-	,@ForeignID as int
-	,@EvidenceID as int
+    @EvidenceTypeID AS INT ,
+    @ForeignID AS INT ,
+    @EvidenceID AS INT
 AS
-BEGIN
-	DECLARE @EvidenceTypeID1 int
-	DECLARE @ForeignID1 int
-	DECLARE @EvidenceID1 int
-	
-	set @EvidenceTypeID1 = @EvidenceTypeID
-	set @ForeignID1 = @ForeignID
-	set @EvidenceID1 = @EvidenceID
-		
-	SET NOCOUNT ON;
-	SELECT	epe.PlanEvidenceID
-			,epe.EvidenceID
-			,epe.PlanID
-			,epe.EvidenceTypeID
-			,epe.ForeignID
-			,e.FileName
-			,e.FileExt
-			,e.FileSize
-			,e.CreatedByID
-			,e.[Description]
-			,e.Rationale
-	FROM EmplPlanEvidence epe
-	LEFT JOIN Evidence e (NOLOCK) ON epe.EvidenceID = e.EvidenceID
-	WHERE EvidenceTypeID =@EvidenceTypeID1
-	AND ForeignID =@ForeignID1
-	and epe.EvidenceID = @EvidenceID1
-	AND epe.IsDeleted = 0
+    BEGIN
+        SET NOCOUNT ON;
 
-END
+        DECLARE @EvidenceTypeID1 INT;
+        DECLARE @ForeignID1 INT;
+        DECLARE @EvidenceID1 INT;
+	
+        SET @EvidenceTypeID1 = @EvidenceTypeID;
+        SET @ForeignID1 = @ForeignID;
+        SET @EvidenceID1 = @EvidenceID;
+		
+        SELECT  epe.PlanEvidenceID ,
+                epe.EvidenceID ,
+                epe.PlanID ,
+                epe.EvidenceTypeID ,
+                epe.ForeignID ,
+                e.FileName ,
+                e.FileExt ,
+                e.FileSize ,
+                e.CreatedByID ,
+                e.Description ,
+                e.Rationale
+        FROM    dbo.EmplPlanEvidence epe ( NOLOCK )
+                LEFT JOIN dbo.Evidence e ( NOLOCK ) ON epe.EvidenceID = e.EvidenceID
+        WHERE   epe.EvidenceTypeID = @EvidenceTypeID1
+                AND epe.ForeignID = @ForeignID1
+                AND epe.EvidenceID = @EvidenceID1
+                AND epe.IsDeleted = 0;
+
+    END;
 
 GO

@@ -8,16 +8,17 @@ GO
 -- Description:	Get  Evidence count by EvidenceTypeID and ForeignID
 -- =============================================
 CREATE PROCEDURE [dbo].[getEvidenceCountByTypeIDandForeignID]
-	@EvidenceTypeID AS int
-	,@ForeignID as int
+    @EvidenceTypeID AS INT ,
+    @ForeignID AS INT
 AS
-BEGIN
-	SET NOCOUNT ON;
-	SELECT COUNT( distinct evidenceID) as EvidenceCount
-	FROM EmplPlanEvidence
-	WHERE EvidenceTypeID = @EvidenceTypeID
-	AND ForeignID = @ForeignID
+    BEGIN
+        SET NOCOUNT ON;
 
-END
+        SELECT  COUNT(DISTINCT EvidenceID) AS EvidenceCount
+        FROM    dbo.EmplPlanEvidence (NOLOCK)
+        WHERE   EvidenceTypeID = @EvidenceTypeID
+                AND ForeignID = @ForeignID;
+
+    END;
 
 GO

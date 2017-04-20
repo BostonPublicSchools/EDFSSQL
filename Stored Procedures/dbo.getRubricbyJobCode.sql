@@ -8,21 +8,18 @@ GO
 -- Description:	Rubric by Job Code
 -- =============================================
 CREATE PROCEDURE [dbo].[getRubricbyJobCode]
-	@JobCode AS nchar(6) = null
+    @JobCode AS NCHAR(6) = NULL
 AS
-BEGIN
-	SET NOCOUNT ON;		
-	SELECT 
-		ej.JobCode
-		,ej.JobName
-		,ej.RubricID
-		,ej.UnionCode
-		,rbh.RubricName
-		,rbh.IsActive
-	FROM 
-		EmplJob ej
-	JOIN RubricHdr rbh ON rbh.RubricID = ej.RubricID
-	WHERE
-		ej.JobCode =  @JobCode
-END
+    BEGIN
+        SET NOCOUNT ON;		
+        SELECT  ej.JobCode ,
+                ej.JobName ,
+                ej.RubricID ,
+                ej.UnionCode ,
+                rbh.RubricName ,
+                rbh.IsActive
+        FROM    dbo.EmplJob ej ( NOLOCK )
+                JOIN dbo.RubricHdr rbh ( NOLOCK ) ON rbh.RubricID = ej.RubricID
+        WHERE   ej.JobCode = @JobCode;
+    END;
 GO

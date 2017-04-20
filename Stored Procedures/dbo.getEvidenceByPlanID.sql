@@ -28,11 +28,10 @@ AS
                 e.IsEvidenceViewed ,
                 e.EvidenceViewedDt ,
                 e.EvidenceViewedBy ,
-                -1 SortOrder--[s.SortOrder]
-                ,
+                -1 SortOrder ,
                 e.LastCommentViewDt ,
                 ( SELECT    COUNT(CommentID)
-                  FROM      dbo.Comment ( NOLOCK )
+                  FROM      dbo.Comment (NOLOCK)
                   WHERE     PlanID = @PlanID
                             AND OtherID = e.EvidenceID
                             AND IsDeleted = 0
@@ -41,7 +40,7 @@ AS
                 JOIN dbo.Empl em ( NOLOCK ) ON em.EmplID = e.CreatedByID
                 INNER JOIN ( SELECT DISTINCT
                                     EvidenceID
-                             FROM   dbo.EmplPlanEvidence ( NOLOCK )
+                             FROM   dbo.EmplPlanEvidence (NOLOCK)
                              WHERE  PlanID = @PlanID
                            ) ev ON ev.EvidenceID = e.EvidenceID
         WHERE   e.IsDeleted = 0
