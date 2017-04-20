@@ -8,49 +8,51 @@ GO
 -- Description:	List of available intiative statuses
 -- =============================================
 CREATE PROCEDURE [dbo].[getFilters]
-@ParentFilterID int = -1
-,@GetAll bit = 0
+    @ParentFilterID INT = -1 ,
+    @GetAll BIT = 0
 AS
-BEGIN
-	SET NOCOUNT ON;
-	IF @GetAll =0
-	BEGIN
-		IF @ParentFilterID <> -1 
-		BEGIN
-			SELECT	f.filterID
-					,f.ParentFilterID
-					,f.FilterCode
-					,f.FilterText
-					,f.FilterSubText
-					,f.SortOrder as CodeSortOrder					
-			FROM Filters f
-			WHERE ParentFilterID = @ParentFilterID and IsDeleted = 0
-			ORDER BY f.SortOrder
-		END
-		ELSE
-		BEGIN
-			SELECT f.filterID
-					,f.ParentFilterID
-					,f.FilterCode
-					,f.FilterText
-					,f.FilterSubText
-					,f.SortOrder as CodeSortOrder					
-			FROM Filters f 
-			WHERE ParentFilterID =1 and IsDeleted = 0
-			Order by f.SortOrder
-		END
-	END
-	if @GetAll = 1
-	BEGIN
-	SELECT f.filterID
-				,f.ParentFilterID
-				,f.FilterCode
-				,f.FilterText
-				,f.FilterSubText
-				,f.SortOrder as CodeSortOrder				
-		FROM Filters f 
-		WHERE IsDeleted = 0		
-		Order by f.SortOrder
-	END 		
-END
+    BEGIN
+        SET NOCOUNT ON;
+        IF @GetAll = 0
+            BEGIN
+                IF @ParentFilterID <> -1
+                    BEGIN
+                        SELECT  f.FilterID ,
+                                f.ParentFilterID ,
+                                f.FilterCode ,
+                                f.Filtertext ,
+                                f.FilterSubText ,
+                                f.SortOrder AS CodeSortOrder
+                        FROM    dbo.Filters f ( NOLOCK )
+                        WHERE   f.ParentFilterID = @ParentFilterID
+                                AND f.IsDeleted = 0
+                        ORDER BY f.SortOrder;
+                    END;
+                ELSE
+                    BEGIN
+                        SELECT  f.FilterID ,
+                                f.ParentFilterID ,
+                                f.FilterCode ,
+                                f.Filtertext ,
+                                f.FilterSubText ,
+                                f.SortOrder AS CodeSortOrder
+                        FROM    dbo.Filters f ( NOLOCK )
+                        WHERE   f.ParentFilterID = 1
+                                AND f.IsDeleted = 0
+                        ORDER BY f.SortOrder;
+                    END;
+            END;
+        IF @GetAll = 1
+            BEGIN
+                SELECT  f.FilterID ,
+                        f.ParentFilterID ,
+                        f.FilterCode ,
+                        f.Filtertext ,
+                        f.FilterSubText ,
+                        f.SortOrder AS CodeSortOrder
+                FROM    dbo.Filters f ( NOLOCK )
+                WHERE   f.IsDeleted = 0
+                ORDER BY f.SortOrder;
+            END; 		
+    END;
 GO

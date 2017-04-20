@@ -16,56 +16,64 @@ GO
 -- exec [CheckEmplTempAccess] '1X2097','000',0
 -- =============================================
 CREATE PROCEDURE [dbo].[CheckEmplTempAccess]
-	  @UserID AS nchar(6)	
-	 ,@Password As nvarchar(25) --Decrypted Pwd
-	 ,@intReturn AS int = null OUTPUT
+    @UserID AS NCHAR(6) ,
+    @Password AS NVARCHAR(25) --Decrypted Pwd
+    ,
+    @intReturn AS INT = NULL OUTPUT
 AS
-BEGIN
-	SET NOCOUNT ON;	
+    BEGIN
+        SET NOCOUNT ON;	
 
-OPEN SYMMETRIC KEY EDFSTableKey DECRYPTION
-BY CERTIFICATE EncryptEDFSCert
+        OPEN SYMMETRIC KEY EDFSTableKey DECRYPTION
+BY CERTIFICATE EncryptEDFSCert;
 		
-Declare 
-		@IsEmplActive as bit 
-		,@HasTempActiveAccess as bit =0 
-		,@DecryptPassword as nvarchar(25)--varbinary(max)
-		,@DecryptPasswordFromUser varbinary(max)
+        DECLARE @IsEmplActive AS BIT ,
+            @HasTempActiveAccess AS BIT = 0 ,
+            @DecryptPassword AS NVARCHAR(25)--varbinary(max)
+            ,
+            @DecryptPasswordFromUser VARBINARY(MAX);
 
-IF EXISTS(	Select top 1 EmplID from Empl Where EmplID = @UserID)
-BEGIN
+        IF EXISTS ( SELECT TOP 1
+                            EmplID
+                    FROM    dbo.Empl ( NOLOCK )
+                    WHERE   EmplID = @UserID )
+            BEGIN
 	
-	Select 
-		@IsEmplActive = EmplActive
-		,@HasTempActiveAccess = (Case 
-									When EmplActive=0 And (DATEDIFF(dd, GETDATE(),EmplActiveDt) > -1 
-															and DATEDIFF(dd, GETDATE(),EmplActiveDt)< 31)
-									Then 1 Else 0 End)
-		--,@DecryptPassword= EmplPWord
-		,@DecryptPassword = CONVERT(NVARCHAR, DecryptByKey([EmplPWord])) 
-	From Empl where EmplID=@UserID
+                SELECT  @IsEmplActive = EmplActive ,
+                        @HasTempActiveAccess = ( CASE WHEN EmplActive = 0
+                                                           AND ( DATEDIFF(dd,
+                                                              GETDATE(),
+                                                              EmplActiveDt) > -1
+                                                              AND DATEDIFF(dd,
+                                                              GETDATE(),
+                                                              EmplActiveDt) < 31
+                                                              ) THEN 1
+                                                      ELSE 0
+                                                 END )  ,
+                        @DecryptPassword = CONVERT(NVARCHAR, DECRYPTBYKEY(EmplPWord))
+                FROM    dbo.Empl ( NOLOCK )
+                WHERE   EmplID = @UserID;
 		
-	IF @IsEmplActive = 1
-		Set @intReturn = -1;
-	ELSE IF @IsEmplActive = 0 and @HasTempActiveAccess = 1
-	Begin		 
-		--Set @DecryptPasswordFromUser =ENCRYPTBYKEY(KEY_GUID('EdfsTableKey'),@Password)-- ENCRYPTBYKEY(KEY_GUID('EdfsTableKey'),@Password)
-		print @Password
-		print @DecryptPassword
-		 --If(@DecryptPasswordFromUser=@DecryptPassword)		 
-		 
-		 if( CAST(@Password as varbinary(25))= cast(@DecryptPassword as varbinary(25)) )
-			Set @intReturn = 1;
-		 Else
-			Set @intReturn = 2;				
-	End
-	Else	
-		Set @intReturn = 0;
-END
-Else
-	Set @intReturn = -2; 	
+                IF @IsEmplActive = 1
+                    SET @intReturn = -1;
+                ELSE
+                    IF @IsEmplActive = 0
+                        AND @HasTempActiveAccess = 1
+                        BEGIN		 
+                            PRINT @Password;
+                            PRINT @DecryptPassword;
 
---Select 	@intReturn
-END	
+                            IF ( CAST(@Password AS VARBINARY(25)) = CAST(@DecryptPassword AS VARBINARY(25)) )
+                                SET @intReturn = 1;
+                            ELSE
+                                SET @intReturn = 2;				
+                        END;
+                    ELSE
+                        SET @intReturn = 0;
+            END;
+        ELSE
+            SET @intReturn = -2; 	
+
+    END;	
 
 GO

@@ -10,33 +10,35 @@ GO
 -- Description:	check if the PlanId is not associated in other table( INFORMATION_SCHEMA.KEY_COLUMN_USAGE) 
 -- exec CheckIsPlanEmpty 200400
 -- =============================================
-CREATE PROCEDURE [dbo].[CheckIsPlanEmpty]	
-	 @PlanID as int 
-	,@ReturnValue as bit=null OUTPUT -- O FOR empty 
+CREATE PROCEDURE [dbo].[CheckIsPlanEmpty]
+    @PlanID AS INT ,
+    @ReturnValue AS BIT = NULL OUTPUT -- O FOR empty 
 AS
-BEGIN
+    BEGIN
 
-DECLARE @sqlcmd NVARCHAR(MAX);
-SET @sqlcmd = STUFF((
-		SELECT ' UNION SELECT DISTINCT ' + column_name + ' FROM '+ TABLE_NAME  
-			+ ' WHERE PLANID = '+CONVERT(nvarchar,@planid)
-		FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
-		WHERE column_name='planid' and TABLE_NAME !='EmplPlan'
-		ORDER BY TABLE_NAME
-		FOR XML PATH(''),TYPE
-		).value('.','NVARCHAR(MAX)'),1,7,'');
+        DECLARE @sqlcmd NVARCHAR(MAX);
+        SET @sqlcmd = STUFF((SELECT ' UNION SELECT DISTINCT ' + COLUMN_NAME
+                                    + ' FROM ' + TABLE_NAME
+                                    + ' WHERE PLANID = '
+                                    + CONVERT(NVARCHAR, @PlanID)
+                             FROM   INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                             WHERE  COLUMN_NAME = 'planid'
+                                    AND TABLE_NAME != 'EmplPlan'
+                             ORDER BY TABLE_NAME
+            FOR             XML PATH('') ,
+                                TYPE
+		).value('.', 'NVARCHAR(MAX)'), 1, 7, '');
 
---print @sqlcmd
-EXECUTE sp_executesql @sqlcmd
+        EXECUTE sys.sp_executesql @sqlcmd;
 
- if (@@ROWCOUNT=0)
-	set @ReturnValue=1 --true  
- else
- 	set @ReturnValue=0 --false  
+        IF ( @@ROWCOUNT = 0 )
+            SET @ReturnValue = 1; --true  
+        ELSE
+            SET @ReturnValue = 0; --false  
  
- select @ReturnValue
+        SELECT  @ReturnValue;
  
-END
+    END;
 	
 
 

@@ -14,7 +14,7 @@ AS
                 AND REPLACE(SchYear, '-', '') >= ( SELECT  DISTINCT
                                                             REPLACE(SchYear,
                                                               '-', '')
-                                                   FROM     dbo.SchoolCalendar
+                                                   FROM     dbo.SchoolCalendar  (NOLOCK)
                                                    WHERE    CalendarDate = ( SELECT
                                                               DATEADD(dd, 0,
                                                               DATEDIFF(dd, 0,
