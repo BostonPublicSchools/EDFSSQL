@@ -10,3 +10,5 @@ CREATE TABLE [dbo].[CommentsViewHistory]
 [LastUpdatedByID] [nvarchar] (6) COLLATE SQL_Latin1_General_CP1_CI_AS NULL
 ) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [CommentsViewHistory_AssignedEmplID_IsViewed] ON [dbo].[CommentsViewHistory] ([AssignedEmplID], [IsViewed]) ON [PRIMARY]
+GO

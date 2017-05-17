@@ -6,7 +6,7 @@ CREATE TABLE [dbo].[ChangelogArchive]
 [LoggedEvent] [nvarchar] (max) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
 [EventDt] [datetime] NOT NULL,
 [PreviousText] [nvarchar] (max) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
-[NewText] [nvarchar] (max) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+[NewText] [nvarchar] (max) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
 [CreatedByID] [nchar] (6) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL CONSTRAINT [DF__Changelog__Creat__0C26B6F1] DEFAULT ('000000'),
 [CreatedByDt] [datetime] NOT NULL CONSTRAINT [DF__Changelog__Creat__0D1ADB2A] DEFAULT (getdate()),
 [LastUpdatedByID] [nchar] (6) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL CONSTRAINT [DF__Changelog__LastU__0E0EFF63] DEFAULT ('000000'),

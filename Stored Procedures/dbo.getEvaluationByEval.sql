@@ -79,14 +79,14 @@ AS
                             )
                        ELSE ( SELECT    NameLast + ', ' + NameFirst + ' '
                                         + ISNULL(NameMiddle, '')
-                              FROM      dbo.Empl
+                              FROM      dbo.Empl (NOLOCK)
                               WHERE     EmplID = ej.MgrID
                             )
                   END ) AS MgrName ,
                 ej.EmplID ,
                 ( SELECT    NameLast + ', ' + NameFirst + ' '
                             + ISNULL(NameMiddle, '') + ' (' + EmplID + ')'
-                  FROM      dbo.Empl
+                  FROM      dbo.Empl (NOLOCK)
                   WHERE     EmplID = ej.EmplID
                 ) AS EmplName ,
                 minc.CodeID AS minCodeID ,
@@ -124,8 +124,8 @@ AS
                 LEFT JOIN dbo.EmplPlan ep ( NOLOCK ) ON ep.PlanID = e.PlanID
                 LEFT JOIN dbo.EmplEmplJob ej ( NOLOCK ) ON ej.EmplRcdNo <= 20
                                                            AND ej.EmplJobID = ep.EmplJobID
-                LEFT JOIN dbo.CodeLookUp clEjCls ( NOLOCK ) ON clEjCls.Code = ej.EmplClass
-                                                              AND clEjCls.CodeType = 'emplclass'
+                LEFT JOIN dbo.CodeLookUp clEjCls ( NOLOCK ) ON  clEjCls.CodeType = 'emplclass'
+                                                              AND clEjCls.Code = ej.EmplClass
                 JOIN dbo.EmplJob AS j ( NOLOCK ) ON ej.JobCode = j.JobCode
                 LEFT OUTER JOIN dbo.EmplExceptions AS emplEx ( NOLOCK ) ON emplEx.EmplJobID = ej.EmplJobID
                 LEFT JOIN dbo.SubevalAssignedEmplEmplJob AS ase ( NOLOCK ) ON ase.IsActive = 1

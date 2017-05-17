@@ -17,19 +17,28 @@ AS
     BEGIN
 
         SET NOCOUNT ON;
+
+        DECLARE @logId INT;
 		
-        IF EXISTS ( SELECT TOP 1
-                            LogId
-                    FROM    dbo.UserLog ( NOLOCK )
-                    WHERE   UserId = @UserID
-                            AND LogId = ( SELECT    MAX(LogId)
-                                          FROM      dbo.UserLog ( NOLOCK )
-                                          WHERE     UserId = @UserID
-                                        )
+        SELECT  @logId = MAX(LogId)
+        FROM    dbo.UserLog (NOLOCK)
+        WHERE   UserId = @UserID;
+
+        IF EXISTS ( SELECT  LogId
+                    FROM    dbo.UserLog (NOLOCK)
+                    WHERE   LogId = ( SELECT    MAX(LogId)
+                                      FROM      dbo.UserLog (NOLOCK)
+                                      WHERE     UserId = @UserID
+                                    )
                             AND UserLogOut = 0
                             AND LoginIssue = 'Login Successful'
-                            AND DATEDIFF(MINUTE, CreatedDt, GETDATE()) < 10 )
+                            AND DATEDIFF(MINUTE, CreatedDt, GETDATE()) < 5 )
             BEGIN
+                UPDATE  dbo.UserLog
+                SET     LogoutDt = GETDATE() ,
+                        UserLogOut = 0
+                WHERE   LogId = @logId;
+
                 SET @IsLogged = 1;
             END;
         PRINT @IsLogged;

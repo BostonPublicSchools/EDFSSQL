@@ -59,3 +59,5 @@ END
 GO
 ALTER TABLE [dbo].[EmplExceptions] ADD CONSTRAINT [PK_EmplExceptions] PRIMARY KEY CLUSTERED  ([ExceptionID]) WITH (FILLFACTOR=80) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [EmplExceptions_EmplJobID] ON [dbo].[EmplExceptions] ([EmplJobID]) INCLUDE ([MgrID]) ON [PRIMARY]
+GO

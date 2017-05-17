@@ -14,6 +14,8 @@ CREATE TABLE [dbo].[SubevalAssignedEmplEmplJob]
 GO
 ALTER TABLE [dbo].[SubevalAssignedEmplEmplJob] ADD CONSTRAINT [PK_SubevalAssignedEmplEmplJob] PRIMARY KEY CLUSTERED  ([AssignedSubevaluatorID]) WITH (FILLFACTOR=80) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [SubevalAssignedEmplEmplJob_EmplJobID_IsActive_isPrimary_IsDeleted] ON [dbo].[SubevalAssignedEmplEmplJob] ([EmplJobID], [IsActive], [IsPrimary], [IsDeleted]) INCLUDE ([SubEvalID]) ON [PRIMARY]
+GO
 CREATE NONCLUSTERED INDEX [TemporaryLoadFixMay152015] ON [dbo].[SubevalAssignedEmplEmplJob] ([IsActive], [IsPrimary], [IsDeleted]) INCLUDE ([EmplJobID], [SubEvalID]) ON [PRIMARY]
 GO
 ALTER TABLE [dbo].[SubevalAssignedEmplEmplJob] WITH NOCHECK ADD CONSTRAINT [FK_SubevalAssignedEmplEmplJob_EmplEmplJob] FOREIGN KEY ([EmplJobID]) REFERENCES [dbo].[EmplEmplJob] ([EmplJobID])

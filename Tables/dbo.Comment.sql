@@ -16,6 +16,8 @@ CREATE TABLE [dbo].[Comment]
 GO
 ALTER TABLE [dbo].[Comment] ADD CONSTRAINT [PK_BPSEval_Comments] PRIMARY KEY CLUSTERED  ([CommentID]) WITH (FILLFACTOR=80) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [Comment_IsDeleted_OtherID] ON [dbo].[Comment] ([IsDeleted], [OtherID]) ON [PRIMARY]
+GO
 ALTER TABLE [dbo].[Comment] WITH NOCHECK ADD CONSTRAINT [FK_BPSEval_Comments_BPSEval_Codes] FOREIGN KEY ([CommentTypeID]) REFERENCES [dbo].[CodeLookUp] ([CodeID])
 GO
 ALTER TABLE [dbo].[Comment] WITH NOCHECK ADD CONSTRAINT [FK_BPSEval_Comments_BPSEval_Employees] FOREIGN KEY ([EmplID]) REFERENCES [dbo].[Empl] ([EmplID])
