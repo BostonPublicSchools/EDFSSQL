@@ -56,7 +56,7 @@ AS
                   END ) AS SubEvalID ,
                 ( SELECT    NameLast + ', ' + NameFirst + ' '
                             + ISNULL(NameMiddle, '')
-                  FROM      dbo.Empl
+                  FROM      dbo.Empl (NOLOCK)
                   WHERE     EmplID = CASE WHEN ep.SubEvalID IS NULL
                                           THEN CASE WHEN s.EmplID IS NULL
                                                     THEN CASE WHEN ( emplEx.MgrID IS NOT NULL )
