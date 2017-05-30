@@ -380,11 +380,13 @@ CREATE NONCLUSTERED INDEX [EmplJobID_PlanID] ON [dbo].[EmplPlan] ([EmplJobID], [
 GO
 CREATE UNIQUE NONCLUSTERED INDEX [EmplPlan_PlanID_PlanActive_EmplJobID] ON [dbo].[EmplPlan] ([PlanActive], [EmplJobID], [PlanID]) ON [PRIMARY]
 GO
+CREATE NONCLUSTERED INDEX [nciEmplPlan_PlanActive_IsInvalid] ON [dbo].[EmplPlan] ([PlanActive], [IsInvalid]) INCLUDE ([EmplJobID], [PlanID], [PlanSchedEndDt], [PlanStartDt], [PlanTypeID], [RubricID]) ON [PRIMARY]
+GO
 CREATE NONCLUSTERED INDEX [PlanEndDt_EmplJobID] ON [dbo].[EmplPlan] ([PlanSchedEndDt], [EmplJobID]) ON [PRIMARY]
 GO
-ALTER TABLE [dbo].[EmplPlan] WITH NOCHECK ADD CONSTRAINT [FK_EmplPlan_EmplEmplJob] FOREIGN KEY ([EmplJobID]) REFERENCES [dbo].[EmplEmplJob] ([EmplJobID])
-GO
 ALTER TABLE [dbo].[EmplPlan] WITH NOCHECK ADD CONSTRAINT [FK_BPSEval_Plan_BPSEval_Codes] FOREIGN KEY ([PlanTypeID]) REFERENCES [dbo].[CodeLookUp] ([CodeID])
+GO
+ALTER TABLE [dbo].[EmplPlan] WITH NOCHECK ADD CONSTRAINT [FK_EmplPlan_EmplEmplJob] FOREIGN KEY ([EmplJobID]) REFERENCES [dbo].[EmplEmplJob] ([EmplJobID])
 GO
 ALTER TABLE [dbo].[EmplPlan] ADD CONSTRAINT [FK_EmplPlan_RubricHdr] FOREIGN KEY ([RubricID]) REFERENCES [dbo].[RubricHdr] ([RubricID])
 GO
