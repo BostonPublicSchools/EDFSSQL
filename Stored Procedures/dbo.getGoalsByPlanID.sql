@@ -112,8 +112,7 @@ AS
                                                             GoalTypeID ,
                                                             COUNT(GoalTypeID) AS TypeTotal
                                                   FROM      dbo.PlanGoal (NOLOCK)
-                                                  WHERE     PlanID = COALESCE(@PlanID,
-                                                              PlanID)
+                                                  WHERE     PlanID = @PlanID
                                                             AND NOT GoalStatusID = ( SELECT
                                                               CodeID
                                                               FROM
@@ -169,7 +168,7 @@ AS
                 LEFT OUTER JOIN dbo.CodeLookUp AS oagnyr ( NOLOCK ) ON p.MultiYearGoalStatusID = oagnyr.CodeID
                 LEFT OUTER JOIN dbo.Evaluation AS ev ( NOLOCK ) ON gep.EvalId = ev.EvalID
                 LEFT OUTER JOIN dbo.EmplExceptions AS emplEx ( NOLOCK ) ON emplEx.EmplJobID = ej.EmplJobID
-        WHERE   p.PlanID = COALESCE(@PlanID, p.PlanID)
+        WHERE   p.PlanID = @PlanID
         ORDER BY g.CreatedByDt;		
     END;
 GO

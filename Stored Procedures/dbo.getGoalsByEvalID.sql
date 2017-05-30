@@ -161,8 +161,7 @@ AS
                 JOIN dbo.CodeLookUp AS gt ( NOLOCK ) ON g.GoalTypeID = gt.CodeID
                 JOIN dbo.CodeLookUp AS gl ( NOLOCK ) ON g.GoalLevelID = gl.CodeID
                 JOIN dbo.CodeLookUp AS gs ( NOLOCK ) ON g.GoalStatusID = gs.CodeID
-                LEFT OUTER JOIN dbo.GoalEvaluationProgress AS gep ( NOLOCK ) ON gep.EvalId = COALESCE(@EvalID,
-                                                              gep.EvalId)
+                LEFT OUTER JOIN dbo.GoalEvaluationProgress AS gep ( NOLOCK ) ON gep.EvalId = @EvalID
                                                               AND g.GoalID = gep.GoalID
                 LEFT OUTER JOIN dbo.CodeLookUp AS gp ( NOLOCK ) ON gep.ProgressCodeID = gp.CodeID
                 LEFT OUTER JOIN dbo.CodeLookUp AS oag ( NOLOCK ) ON p.GoalStatusID = oag.CodeID
